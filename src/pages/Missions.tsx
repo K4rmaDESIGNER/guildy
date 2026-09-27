@@ -22,10 +22,8 @@ type Mission = {
   gold_reward: number
   platinum_reward: number
   status: MissionStatus
-
   created_by: string
   claimed_by: string | null
-
   created_at: string
   claimed_at: string | null
   completed_at: string | null
@@ -39,6 +37,10 @@ type Tab =
 function Missions() {
   const navigate = useNavigate()
 
+  /* =========================
+     DADOS
+  ========================= */
+
   const [missions, setMissions] =
     useState<Mission[]>([])
 
@@ -50,6 +52,10 @@ function Missions() {
 
   const [activeTab, setActiveTab] =
     useState<Tab>('board')
+
+  /* =========================
+     NOVA MISSÃO
+  ========================= */
 
   const [showCreateMission, setShowCreateMission] =
     useState(false)
@@ -72,14 +78,29 @@ function Missions() {
   const [creating, setCreating] =
     useState(false)
 
+  /* =========================
+     AÇÕES
+  ========================= */
+
   const [acceptingMissionId, setAcceptingMissionId] =
     useState<string | null>(null)
+
+  const [completingMissionId, setCompletingMissionId] =
+    useState<string | null>(null)
+
+  /* =========================
+     MENSAGENS
+  ========================= */
 
   const [message, setMessage] =
     useState('')
 
   const [successMessage, setSuccessMessage] =
     useState('')
+
+  /* =========================
+     CARREGAMENTO
+  ========================= */
 
   useEffect(() => {
     loadMissions()
@@ -134,9 +155,16 @@ function Missions() {
       return
     }
 
-    setMissions(data ?? [])
+    setMissions(
+      (data as Mission[]) ?? []
+    )
+
     setLoading(false)
   }
+
+  /* =========================
+     FILTROS
+  ========================= */
 
   const boardMissions =
     useMemo(
@@ -169,6 +197,10 @@ function Missions() {
         ),
       [missions, currentUserId]
     )
+
+  /* =========================
+     CRIAR MISSÃO
+  ========================= */
 
   async function createMission() {
     setMessage('')
@@ -221,31 +253,29 @@ function Missions() {
 
     setCreating(true)
 
-    const { error } =
-      await supabase
-        .from('missions')
-        .insert({
-          title:
-            title.trim(),
+    const { error } = await supabase
+      .from('missions')
+      .insert({
+        title:
+          title.trim(),
 
-          description:
-            description.trim() ||
-            null,
+        description:
+          description.trim() || null,
 
-          priority,
+        priority,
 
-          gold_reward:
-            gold,
+        gold_reward:
+          gold,
 
-          platinum_reward:
-            platinum,
+        platinum_reward:
+          platinum,
 
-          status:
-            'available',
+        status:
+          'available',
 
-          created_by:
-            user.id,
-        })
+        created_by:
+          user.id,
+      })
 
     if (error) {
       console.error(
@@ -278,6 +308,10 @@ function Missions() {
 
     await loadMissions()
   }
+
+  /* =========================
+     ACEITAR MISSÃO
+  ========================= */
 
   async function acceptMission(
     missionId: string
@@ -336,6 +370,58 @@ function Missions() {
     )
   }
 
+  /* =========================
+     CONCLUIR MISSÃO
+  ========================= */
+
+  async function completeMission(
+    missionId: string
+  ) {
+    setMessage('')
+    setSuccessMessage('')
+
+    setCompletingMissionId(
+      missionId
+    )
+
+    const { error } =
+      await supabase.rpc(
+        'complete_mission',
+        {
+          p_mission_id:
+            missionId,
+        }
+      )
+
+    if (error) {
+      console.error(
+        'Erro ao concluir missão:',
+        error
+      )
+
+      setMessage(
+        'Não foi possível concluir a missão.'
+      )
+
+      setCompletingMissionId(null)
+      return
+    }
+
+    setCompletingMissionId(null)
+
+    await loadMissions()
+
+    setActiveTab('completed')
+
+    setSuccessMessage(
+      'Missão concluída! Gold e Platinum foram creditados.'
+    )
+  }
+
+  /* =========================
+     UTILITÁRIOS
+  ========================= */
+
   function priorityLabel(
     missionPriority: Priority
   ) {
@@ -368,6 +454,10 @@ function Missions() {
         }
       )
   }
+
+  /* =========================
+     CARD DE MISSÃO
+  ========================= */
 
   function renderMissionCard(
     mission: Mission,
@@ -498,6 +588,8 @@ function Missions() {
 
         </div>
 
+        {/* ACEITAR */}
+
         {mode === 'board' && (
 
           <button
@@ -525,16 +617,32 @@ function Missions() {
 
         )}
 
+        {/* CONCLUIR */}
+
         {mode === 'mine' && (
 
           <>
             <button
               className="
                 complete-mission-button
+                complete-mission-active
               "
-              disabled
+              onClick={() =>
+                completeMission(
+                  mission.id
+                )
+              }
+              disabled={
+                completingMissionId ===
+                mission.id
+              }
             >
-              CONCLUIR MISSÃO
+
+              {completingMissionId ===
+              mission.id
+                ? 'CONCLUINDO...'
+                : '✓ CONCLUIR MISSÃO'}
+
             </button>
 
             <span
@@ -542,29 +650,47 @@ function Missions() {
                 mission-next-step
               "
             >
-              Conclusão será ativada
-              na próxima etapa
+              Ao concluir, Gold e
+              Platinum serão creditados
+              automaticamente.
             </span>
           </>
 
         )}
 
-        {mode ===
-          'completed' && (
+        {/* CONCLUÍDA */}
 
-          <div
-            className="
-              completed-mission-seal
-            "
-          >
-            ✓ MISSÃO CONCLUÍDA
-          </div>
+        {mode === 'completed' && (
+
+          <>
+
+            <div
+              className="
+                completed-mission-seal
+              "
+            >
+              ✓ MISSÃO CONCLUÍDA
+            </div>
+
+            <span
+              className="
+                completed-reward-text
+              "
+            >
+              Recompensas creditadas
+            </span>
+
+          </>
 
         )}
 
       </article>
     )
   }
+
+  /* =========================
+     ESTADO VAZIO
+  ========================= */
 
   function renderEmptyState() {
     if (
@@ -677,6 +803,10 @@ function Missions() {
     )
   }
 
+  /* =========================
+     MISSÕES VISÍVEIS
+  ========================= */
+
   const visibleMissions =
     activeTab === 'board'
       ? boardMissions
@@ -684,29 +814,23 @@ function Missions() {
         ? myMissions
         : completedMissions
 
+  /* =========================
+     INTERFACE
+  ========================= */
+
   return (
-    <main
-      className="missions-page"
-    >
+    <main className="missions-page">
 
-      <div
-        className="
-          missions-container
-        "
-      >
+      <div className="missions-container">
 
-        <header
-          className="
-            missions-header
-          "
-        >
+        {/* CABEÇALHO */}
+
+        <header className="missions-header">
 
           <div>
 
             <button
-              className="
-                mission-back-button
-              "
+              className="mission-back-button"
               onClick={() =>
                 navigate('/home')
               }
@@ -714,11 +838,7 @@ function Missions() {
               ← VOLTAR
             </button>
 
-            <span
-              className="
-                missions-kicker
-              "
-            >
+            <span className="missions-kicker">
               QUADRO DA GUILDA
             </span>
 
@@ -735,9 +855,7 @@ function Missions() {
           </div>
 
           <button
-            className="
-              create-mission-button
-            "
+            className="create-mission-button"
             onClick={() => {
               setMessage('')
               setSuccessMessage('')
@@ -753,11 +871,7 @@ function Missions() {
 
         {/* ABAS */}
 
-        <nav
-          className="
-            mission-tabs
-          "
-        >
+        <nav className="mission-tabs">
 
           <button
             className={
@@ -765,11 +879,11 @@ function Missions() {
                 ? 'mission-tab active'
                 : 'mission-tab'
             }
-            onClick={() =>
-              setActiveTab(
-                'board'
-              )
-            }
+            onClick={() => {
+              setMessage('')
+              setSuccessMessage('')
+              setActiveTab('board')
+            }}
           >
 
             <span>
@@ -797,11 +911,11 @@ function Missions() {
                 ? 'mission-tab active'
                 : 'mission-tab'
             }
-            onClick={() =>
-              setActiveTab(
-                'mine'
-              )
-            }
+            onClick={() => {
+              setMessage('')
+              setSuccessMessage('')
+              setActiveTab('mine')
+            }}
           >
 
             <span>
@@ -830,11 +944,13 @@ function Missions() {
                 ? 'mission-tab active'
                 : 'mission-tab'
             }
-            onClick={() =>
+            onClick={() => {
+              setMessage('')
+              setSuccessMessage('')
               setActiveTab(
                 'completed'
               )
-            }
+            }}
           >
 
             <span>
@@ -860,19 +976,14 @@ function Missions() {
 
         {/* STATUS */}
 
-        <section
-          className="
-            mission-board-info
-          "
-        >
+        <section className="mission-board-info">
 
           <div>
 
             <span>
               {activeTab === 'board'
                 ? 'MISSÕES DISPONÍVEIS'
-                : activeTab ===
-                    'mine'
+                : activeTab === 'mine'
                   ? 'MISSÕES ATIVAS'
                   : 'MISSÕES CONCLUÍDAS'}
             </span>
@@ -885,17 +996,9 @@ function Missions() {
 
           </div>
 
-          <div
-            className="
-              mission-board-status
-            "
-          >
+          <div className="mission-board-status">
 
-            <span
-              className="
-                status-light
-              "
-            />
+            <span className="status-light" />
 
             QUADRO ATIVO
 
@@ -903,48 +1006,37 @@ function Missions() {
 
         </section>
 
+        {/* ERRO */}
+
         {message && (
-          <div
-            className="
-              mission-message
-            "
-          >
+          <div className="mission-message">
             {message}
           </div>
         )}
 
+        {/* SUCESSO */}
+
         {successMessage && (
-          <div
-            className="
-              mission-success-message
-            "
-          >
+          <div className="mission-success-message">
             ✓ {successMessage}
           </div>
         )}
 
+        {/* CONTEÚDO */}
+
         {loading ? (
 
-          <div
-            className="
-              mission-loading
-            "
-          >
+          <div className="mission-loading">
             Carregando missões...
           </div>
 
-        ) : visibleMissions
-            .length === 0 ? (
+        ) : visibleMissions.length === 0 ? (
 
           renderEmptyState()
 
         ) : (
 
-          <section
-            className="
-              mission-grid
-            "
-          >
+          <section className="mission-grid">
 
             {visibleMissions.map(
               (mission) =>
@@ -960,14 +1052,14 @@ function Missions() {
 
       </div>
 
-      {/* MODAL NOVA MISSÃO */}
+      {/* =========================
+          MODAL NOVA MISSÃO
+      ========================= */}
 
       {showCreateMission && (
 
         <div
-          className="
-            mission-modal-overlay
-          "
+          className="mission-modal-overlay"
           onMouseDown={() =>
             setShowCreateMission(
               false
@@ -976,19 +1068,13 @@ function Missions() {
         >
 
           <section
-            className="
-              mission-modal
-            "
+            className="mission-modal"
             onMouseDown={(event) =>
               event.stopPropagation()
             }
           >
 
-            <div
-              className="
-                mission-modal-header
-              "
-            >
+            <div className="mission-modal-header">
 
               <div>
 
@@ -1014,11 +1100,7 @@ function Missions() {
 
             </div>
 
-            <div
-              className="
-                mission-form
-              "
-            >
+            <div className="mission-form">
 
               <label>
                 Nome da missão
@@ -1027,9 +1109,7 @@ function Missions() {
               <input
                 type="text"
                 maxLength={80}
-                placeholder="
-                  Ex: Cadastrar novos produtos
-                "
+                placeholder="Ex: Cadastrar novos produtos"
                 value={title}
                 onChange={(event) =>
                   setTitle(
@@ -1045,9 +1125,7 @@ function Missions() {
               <textarea
                 rows={5}
                 maxLength={500}
-                placeholder="
-                  Explique o que precisa ser feito...
-                "
+                placeholder="Explique o que precisa ser feito..."
                 value={description}
                 onChange={(event) =>
                   setDescription(
@@ -1060,16 +1138,12 @@ function Missions() {
                 Prioridade
               </label>
 
-              <div
-                className="
-                  priority-selector
-                "
-              >
+              <div className="priority-selector">
 
                 <button
+                  type="button"
                   className={
-                    priority ===
-                    'low'
+                    priority === 'low'
                       ? 'selected'
                       : ''
                   }
@@ -1083,9 +1157,9 @@ function Missions() {
                 </button>
 
                 <button
+                  type="button"
                   className={
-                    priority ===
-                    'medium'
+                    priority === 'medium'
                       ? 'selected'
                       : ''
                   }
@@ -1099,9 +1173,9 @@ function Missions() {
                 </button>
 
                 <button
+                  type="button"
                   className={
-                    priority ===
-                    'high'
+                    priority === 'high'
                       ? 'selected'
                       : ''
                   }
@@ -1115,9 +1189,9 @@ function Missions() {
                 </button>
 
                 <button
+                  type="button"
                   className={
-                    priority ===
-                    'critical'
+                    priority === 'critical'
                       ? 'selected'
                       : ''
                   }
@@ -1132,11 +1206,7 @@ function Missions() {
 
               </div>
 
-              <div
-                className="
-                  reward-input-grid
-                "
-              >
+              <div className="reward-input-grid">
 
                 <div>
 
@@ -1185,19 +1255,13 @@ function Missions() {
               </div>
 
               {message && (
-                <div
-                  className="
-                    mission-form-message
-                  "
-                >
+                <div className="mission-form-message">
                   {message}
                 </div>
               )}
 
               <button
-                className="
-                  confirm-create-mission
-                "
+                className="confirm-create-mission"
                 onClick={
                   createMission
                 }
@@ -1205,9 +1269,11 @@ function Missions() {
                   creating
                 }
               >
+
                 {creating
                   ? 'CRIANDO MISSÃO...'
                   : 'PUBLICAR MISSÃO'}
+
               </button>
 
             </div>

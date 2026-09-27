@@ -2896,4 +2896,55 @@ button {
       65px;
   }
 
+}/* =========================================================
+   CONCLUIR MISSÃO
+========================================================= */
+
+.complete-mission-active {
+  cursor: pointer;
+
+  color: #ffffff;
+
+  border-color: #b36cff;
+
+  background:
+    linear-gradient(
+      #a04df0,
+      #6426b6
+    );
+
+  box-shadow:
+    inset 0 2px 0
+      rgba(255,255,255,.25),
+    0 5px 0 #39126f,
+    0 10px 22px
+      rgba(95,35,180,.2);
+}
+
+.complete-mission-active:hover {
+  filter: brightness(1.12);
+
+  transform: translateY(-1px);
+}
+
+.complete-mission-active:disabled {
+  opacity: .65;
+
+  cursor: wait;
+}
+
+.completed-reward-text {
+  display: block;
+
+  margin-top: 8px;
+
+  color: #64d9ff;
+
+  text-align: center;
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing: 1px;
 }
