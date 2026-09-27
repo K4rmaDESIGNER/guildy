@@ -6,6 +6,10 @@ type CalculatorMode =
   | 'human'
   | 'magic'
 
+type MagicResource =
+  | 'gold'
+  | 'platinum'
+
 type Operation =
   | '+'
   | '-'
@@ -22,7 +26,6 @@ type CurrencyCode =
   | 'CAD'
   | 'CHF'
   | 'CNY'
-  | 'ARS'
 
 const currencies: {
   code: CurrencyCode
@@ -69,11 +72,6 @@ const currencies: {
     name: 'Yuan Chinês',
     symbol: '¥',
   },
-  {
-    code: 'ARS',
-    name: 'Peso Argentino',
-    symbol: '$',
-  },
 ]
 
 function Calculator() {
@@ -87,7 +85,7 @@ function Calculator() {
     useState<CalculatorMode>('human')
 
   /* =====================================================
-     CALCULADORA NORMAL
+     CALCULADORA HUMANA
   ===================================================== */
 
   const [display, setDisplay] =
@@ -125,16 +123,29 @@ function Calculator() {
     useState(false)
 
   /* =====================================================
-     GOLD
+     SALDOS MÁGICOS
   ===================================================== */
 
   const [goldBalance, setGoldBalance] =
     useState(0)
 
+  const [platinumBalance, setPlatinumBalance] =
+    useState(0)
+
   const [loadingGold, setLoadingGold] =
     useState(true)
 
-  const [magicGoldAmount, setMagicGoldAmount] =
+  const [loadingPlatinum, setLoadingPlatinum] =
+    useState(true)
+
+  /* =====================================================
+     RECURSO SELECIONADO
+  ===================================================== */
+
+  const [magicResource, setMagicResource] =
+    useState<MagicResource>('gold')
+
+  const [magicAmount, setMagicAmount] =
     useState('')
 
   const [magicCurrency, setMagicCurrency] =
@@ -164,7 +175,21 @@ function Calculator() {
     })
 
   /* =====================================================
-     MENSAGEM
+     VALOR DO PLATINUM
+  ===================================================== */
+
+  const [platinumBrlRate, setPlatinumBrlRate] =
+    useState(() => {
+      const saved =
+        localStorage.getItem(
+          'guildy_platinum_brl_rate'
+        )
+
+      return saved || '1'
+    })
+
+  /* =====================================================
+     MENSAGENS
   ===================================================== */
 
   const [message, setMessage] =
@@ -176,10 +201,11 @@ function Calculator() {
 
   useEffect(() => {
     loadGoldBalance()
+    loadPlatinumBalance()
   }, [])
 
   /* =====================================================
-     CARREGAR GOLD
+     GOLD GLOBAL
   ===================================================== */
 
   async function loadGoldBalance() {
@@ -222,19 +248,80 @@ function Calculator() {
   }
 
   /* =====================================================
-     CALCULADORA
+     PLATINUM DO USUÁRIO
+  ===================================================== */
+
+  async function loadPlatinumBalance() {
+    setLoadingPlatinum(true)
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      setLoadingPlatinum(false)
+      return
+    }
+
+    const { data, error } =
+      await supabase
+        .from('platinum_transactions')
+        .select('amount')
+        .eq(
+          'user_id',
+          user.id
+        )
+
+    if (error) {
+      console.error(
+        'Erro ao carregar Platinum:',
+        error
+      )
+
+      setMessage(
+        'Não foi possível carregar seu Platinum.'
+      )
+
+      setLoadingPlatinum(false)
+      return
+    }
+
+    const total =
+      (data ?? []).reduce(
+        (
+          sum,
+          transaction
+        ) =>
+          sum +
+          Number(
+            transaction.amount
+          ),
+        0
+      )
+
+    setPlatinumBalance(total)
+    setLoadingPlatinum(false)
+  }
+
+  /* =====================================================
+     CALCULADORA BÁSICA
   ===================================================== */
 
   function inputDigit(
     digit: string
   ) {
-    if (waitingForValue) {
+    if (
+      display === 'Erro' ||
+      waitingForValue
+    ) {
       setDisplay(digit)
       setWaitingForValue(false)
       return
     }
 
-    if (display === '0') {
+    if (
+      display === '0'
+    ) {
       setDisplay(digit)
     } else {
       setDisplay(
@@ -244,7 +331,10 @@ function Calculator() {
   }
 
   function inputDecimal() {
-    if (waitingForValue) {
+    if (
+      display === 'Erro' ||
+      waitingForValue
+    ) {
       setDisplay('0.')
       setWaitingForValue(false)
       return
@@ -268,7 +358,8 @@ function Calculator() {
 
   function deleteDigit() {
     if (
-      waitingForValue
+      waitingForValue ||
+      display === 'Erro'
     ) {
       return
     }
@@ -293,6 +384,12 @@ function Calculator() {
   }
 
   function toggleSign() {
+    if (
+      display === 'Erro'
+    ) {
+      return
+    }
+
     const value =
       Number(display)
 
@@ -304,11 +401,17 @@ function Calculator() {
   }
 
   function percentage() {
+    if (
+      display === 'Erro'
+    ) {
+      return
+    }
+
     const value =
       Number(display)
 
     setDisplay(
-      String(
+      formatCalculatorNumber(
         value / 100
       )
     )
@@ -332,7 +435,9 @@ function Calculator() {
         return first * second
 
       case '÷':
-        if (second === 0) {
+        if (
+          second === 0
+        ) {
           return NaN
         }
 
@@ -346,6 +451,13 @@ function Calculator() {
   function chooseOperation(
     nextOperation: Operation
   ) {
+    if (
+      display === 'Erro'
+    ) {
+      clearCalculator()
+      return
+    }
+
     const currentValue =
       Number(display)
 
@@ -399,7 +511,8 @@ function Calculator() {
   function equals() {
     if (
       previousValue === null ||
-      operation === null
+      operation === null ||
+      display === 'Erro'
     ) {
       return
     }
@@ -454,7 +567,7 @@ function Calculator() {
   }
 
   /* =====================================================
-     FORMATAÇÃO MOEDA
+     FORMATAÇÃO
   ===================================================== */
 
   function formatCurrency(
@@ -472,7 +585,7 @@ function Calculator() {
       .format(value)
   }
 
-  function formatGold(
+  function formatResource(
     value: number
   ) {
     return value
@@ -486,7 +599,7 @@ function Calculator() {
   }
 
   /* =====================================================
-     BUSCAR COTAÇÃO
+     COTAÇÃO
   ===================================================== */
 
   async function getRate(
@@ -528,7 +641,7 @@ function Calculator() {
   }
 
   /* =====================================================
-     CONVERTER MOEDA REAL
+     CONVERSÃO HUMANA
   ===================================================== */
 
   async function convertCurrency() {
@@ -564,7 +677,9 @@ function Calculator() {
           toCurrency
         )
 
-      setCurrencyRate(rate)
+      setCurrencyRate(
+        rate
+      )
 
       setCurrencyResult(
         amount * rate
@@ -588,12 +703,15 @@ function Calculator() {
   }
 
   function swapCurrencies() {
+    const oldFrom =
+      fromCurrency
+
     setFromCurrency(
       toCurrency
     )
 
     setToCurrency(
-      fromCurrency
+      oldFrom
     )
 
     setCurrencyResult(
@@ -606,49 +724,132 @@ function Calculator() {
   }
 
   /* =====================================================
-     GOLD → MOEDA REAL
+     ALTERAR RECURSO MÁGICO
   ===================================================== */
 
-  async function convertMagicGold() {
+  function selectMagicResource(
+    resource: MagicResource
+  ) {
+    setMagicResource(
+      resource
+    )
+
+    setMagicAmount('')
+    setMagicResult(null)
+    setMagicExchangeRate(null)
+    setMessage('')
+  }
+
+  /* =====================================================
+     TAXA DO GOLD
+  ===================================================== */
+
+  function updateGoldRate(
+    value: string
+  ) {
+    setGoldBrlRate(value)
+
+    localStorage.setItem(
+      'guildy_gold_brl_rate',
+      value
+    )
+
+    setMagicResult(null)
+  }
+
+  /* =====================================================
+     TAXA DO PLATINUM
+  ===================================================== */
+
+  function updatePlatinumRate(
+    value: string
+  ) {
+    setPlatinumBrlRate(
+      value
+    )
+
+    localStorage.setItem(
+      'guildy_platinum_brl_rate',
+      value
+    )
+
+    setMagicResult(null)
+  }
+
+  /* =====================================================
+     SALDO ATUAL SELECIONADO
+  ===================================================== */
+
+  function currentMagicBalance() {
+    return magicResource ===
+      'gold'
+      ? goldBalance
+      : platinumBalance
+  }
+
+  function currentMagicRate() {
+    return magicResource ===
+      'gold'
+      ? goldBrlRate
+      : platinumBrlRate
+  }
+
+  function currentMagicName() {
+    return magicResource ===
+      'gold'
+      ? 'GOLD'
+      : 'PLATINUM'
+  }
+
+  function currentMagicSymbol() {
+    return magicResource ===
+      'gold'
+      ? '◉'
+      : '◆'
+  }
+
+  /* =====================================================
+     CONVERSÃO MÁGICA
+  ===================================================== */
+
+  async function convertMagicResource() {
     setMessage('')
     setMagicResult(null)
 
-    const goldAmount =
+    const amount =
       Number(
-        magicGoldAmount.replace(
+        magicAmount.replace(
           ',',
           '.'
         )
       )
 
-    const goldRate =
+    const resourceRate =
       Number(
-        goldBrlRate.replace(
+        currentMagicRate().replace(
           ',',
           '.'
         )
       )
 
     if (
-      !Number.isFinite(
-        goldAmount
-      ) ||
-      goldAmount < 0
+      !Number.isFinite(amount) ||
+      amount < 0
     ) {
       setMessage(
-        'Digite uma quantidade válida de Gold.'
+        `Digite uma quantidade válida de ${currentMagicName()}.`
       )
       return
     }
 
     if (
       !Number.isFinite(
-        goldRate
+        resourceRate
       ) ||
-      goldRate <= 0
+      resourceRate <= 0
     ) {
       setMessage(
-        'Defina um valor válido para o Gold.'
+        `Defina um valor válido para ${currentMagicName()}.`
       )
       return
     }
@@ -659,18 +860,16 @@ function Calculator() {
 
     try {
       /*
-        Primeiro:
-        GOLD → REAL
+        GOLD / PLATINUM
+              ↓
+             BRL
+              ↓
+        MOEDA ESCOLHIDA
       */
 
       const amountInBRL =
-        goldAmount *
-        goldRate
-
-      /*
-        Depois:
-        REAL → moeda escolhida
-      */
+        amount *
+        resourceRate
 
       const rate =
         await getRate(
@@ -705,23 +904,6 @@ function Calculator() {
   }
 
   /* =====================================================
-     ALTERAR VALOR DO GOLD
-  ===================================================== */
-
-  function updateGoldRate(
-    value: string
-  ) {
-    setGoldBrlRate(value)
-
-    localStorage.setItem(
-      'guildy_gold_brl_rate',
-      value
-    )
-
-    setMagicResult(null)
-  }
-
-  /* =====================================================
      INTERFACE
   ===================================================== */
 
@@ -730,7 +912,9 @@ function Calculator() {
 
       <div className="calculator-container">
 
-        {/* CABEÇALHO */}
+        {/* =================================================
+            CABEÇALHO
+        ================================================= */}
 
         <header className="calculator-header">
 
@@ -762,7 +946,9 @@ function Calculator() {
 
         </header>
 
-        {/* MODO */}
+        {/* =================================================
+            ESCOLHA DO MODO
+        ================================================= */}
 
         <section className="calculator-mode-switch">
 
@@ -783,6 +969,7 @@ function Calculator() {
             </span>
 
             <div>
+
               <strong>
                 CALCULADORA HUMANA
               </strong>
@@ -790,6 +977,7 @@ function Calculator() {
               <small>
                 Números e moedas reais
               </small>
+
             </div>
 
           </button>
@@ -811,13 +999,15 @@ function Calculator() {
             </span>
 
             <div>
+
               <strong>
                 CALCULADORA MÁGICA
               </strong>
 
               <small>
-                Gold da Guilda
+                Gold e Platinum
               </small>
+
             </div>
 
           </button>
@@ -857,12 +1047,15 @@ function Calculator() {
               <div className="calculator-display">
 
                 <small>
-                  {previousValue !== null &&
-                    operation
+
+                  {previousValue !==
+                    null &&
+                  operation
                     ? `${formatCalculatorNumber(
                         previousValue
                       )} ${operation}`
                     : 'PRONTA'}
+
                 </small>
 
                 <strong>
@@ -1126,6 +1319,7 @@ function Calculator() {
 
                     {currencies.map(
                       (currency) => (
+
                         <option
                           key={
                             currency.code
@@ -1138,6 +1332,7 @@ function Calculator() {
                           {' — '}
                           {currency.name}
                         </option>
+
                       )
                     )}
 
@@ -1180,6 +1375,7 @@ function Calculator() {
 
                     {currencies.map(
                       (currency) => (
+
                         <option
                           key={
                             currency.code
@@ -1192,6 +1388,7 @@ function Calculator() {
                           {' — '}
                           {currency.name}
                         </option>
+
                       )
                     )}
 
@@ -1239,6 +1436,7 @@ function Calculator() {
                   null && (
 
                   <small>
+
                     1 {fromCurrency}
                     {' = '}
                     {currencyRate.toLocaleString(
@@ -1250,6 +1448,7 @@ function Calculator() {
                     )}
                     {' '}
                     {toCurrency}
+
                   </small>
 
                 )}
@@ -1258,7 +1457,7 @@ function Calculator() {
 
               <p className="currency-source">
                 Cotação de referência
-                atualizada pela internet.
+                consultada pela internet.
               </p>
 
             </article>
@@ -1275,52 +1474,126 @@ function Calculator() {
 
           <section className="magic-calculator">
 
+            {/* =============================================
+                TESOURO
+            ============================================= */}
+
             <article className="magic-treasury-card">
 
               <div className="magic-treasury-glow" />
 
               <span className="magic-card-kicker">
-                TESOURO DA GUILDA
+                TESOURO MÁGICO
               </span>
 
-              <div className="magic-gold-symbol">
-                ◉
+              <div className="magic-resource-cards">
+
+                {/* GOLD */}
+
+                <button
+                  className={
+                    magicResource ===
+                    'gold'
+                      ? 'magic-resource-card gold selected'
+                      : 'magic-resource-card gold'
+                  }
+                  onClick={() =>
+                    selectMagicResource(
+                      'gold'
+                    )
+                  }
+                >
+
+                  <span className="magic-resource-symbol">
+                    ◉
+                  </span>
+
+                  <small>
+                    TESOURO DA GUILDA
+                  </small>
+
+                  <strong>
+
+                    {loadingGold
+                      ? '...'
+                      : formatResource(
+                          goldBalance
+                        )}
+
+                  </strong>
+
+                  <span>
+                    GOLD
+                  </span>
+
+                </button>
+
+                {/* PLATINUM */}
+
+                <button
+                  className={
+                    magicResource ===
+                    'platinum'
+                      ? 'magic-resource-card platinum selected'
+                      : 'magic-resource-card platinum'
+                  }
+                  onClick={() =>
+                    selectMagicResource(
+                      'platinum'
+                    )
+                  }
+                >
+
+                  <span className="magic-resource-symbol">
+                    ◆
+                  </span>
+
+                  <small>
+                    SEU SALDO
+                  </small>
+
+                  <strong>
+
+                    {loadingPlatinum
+                      ? '...'
+                      : formatResource(
+                          platinumBalance
+                        )}
+
+                  </strong>
+
+                  <span>
+                    PLATINUM
+                  </span>
+
+                </button>
+
               </div>
-
-              <h2>
-                GOLD DISPONÍVEL
-              </h2>
-
-              <strong className="magic-gold-balance">
-
-                {loadingGold
-                  ? '...'
-                  : formatGold(
-                      goldBalance
-                    )}
-
-              </strong>
-
-              <small>
-                GOLD
-              </small>
 
               <button
                 onClick={() =>
-                  setMagicGoldAmount(
+                  setMagicAmount(
                     String(
-                      goldBalance
+                      currentMagicBalance()
                     )
                   )
                 }
                 disabled={
-                  loadingGold
+                  magicResource ===
+                  'gold'
+                    ? loadingGold
+                    : loadingPlatinum
                 }
               >
-                USAR SALDO TOTAL
+                USAR SALDO TOTAL DE{' '}
+                {currentMagicName()}
               </button>
 
             </article>
+
+            {/* =============================================
+                CONVERSOR MÁGICO
+            ============================================= */}
 
             <article className="magic-converter-card">
 
@@ -1331,21 +1604,26 @@ function Calculator() {
                 </span>
 
                 <strong>
-                  GOLD → MUNDO REAL
+                  {currentMagicName()}
+                  {' → '}
+                  MUNDO REAL
                 </strong>
 
               </div>
+
+              {/* TAXA */}
 
               <div className="magic-equation">
 
                 <div>
 
                   <span>
-                    ◉
+                    {currentMagicSymbol()}
                   </span>
 
                   <strong>
-                    1 GOLD
+                    1{' '}
+                    {currentMagicName()}
                   </strong>
 
                 </div>
@@ -1365,15 +1643,24 @@ function Calculator() {
                     min="0.01"
                     step="0.01"
                     value={
-                      goldBrlRate
+                      currentMagicRate()
                     }
                     onChange={(
                       event
-                    ) =>
-                      updateGoldRate(
-                        event.target.value
-                      )
-                    }
+                    ) => {
+                      if (
+                        magicResource ===
+                        'gold'
+                      ) {
+                        updateGoldRate(
+                          event.target.value
+                        )
+                      } else {
+                        updatePlatinumRate(
+                          event.target.value
+                        )
+                      }
+                    }}
                   />
 
                 </div>
@@ -1381,24 +1668,30 @@ function Calculator() {
               </div>
 
               <p className="magic-rate-description">
+
                 Defina quanto vale
-                1 Gold em Reais.
-                O padrão do GUILDY é
-                1 Gold = R$ 1,00.
+                1{' '}
+                {currentMagicName()}
+                {' '}
+                em Reais.
+
               </p>
+
+              {/* CAMPOS */}
 
               <div className="magic-fields">
 
                 <div>
 
                   <label>
-                    Quantidade de Gold
+                    Quantidade de{' '}
+                    {currentMagicName()}
                   </label>
 
                   <div className="gold-input-wrapper">
 
                     <span>
-                      ◉
+                      {currentMagicSymbol()}
                     </span>
 
                     <input
@@ -1407,12 +1700,12 @@ function Calculator() {
                       step="0.01"
                       placeholder="0"
                       value={
-                        magicGoldAmount
+                        magicAmount
                       }
                       onChange={(
                         event
                       ) => {
-                        setMagicGoldAmount(
+                        setMagicAmount(
                           event.target.value
                         )
 
@@ -1452,6 +1745,7 @@ function Calculator() {
 
                     {currencies.map(
                       (currency) => (
+
                         <option
                           key={
                             currency.code
@@ -1464,6 +1758,7 @@ function Calculator() {
                           {' — '}
                           {currency.name}
                         </option>
+
                       )
                     )}
 
@@ -1473,10 +1768,12 @@ function Calculator() {
 
               </div>
 
+              {/* BOTÃO */}
+
               <button
                 className="magic-convert-button"
                 onClick={
-                  convertMagicGold
+                  convertMagicResource
                 }
                 disabled={
                   convertingMagic
@@ -1485,9 +1782,11 @@ function Calculator() {
 
                 {convertingMagic
                   ? 'INVOCANDO COTAÇÃO...'
-                  : '✦ CONVERTER GOLD'}
+                  : `✦ CONVERTER ${currentMagicName()}`}
 
               </button>
+
+              {/* RESULTADO */}
 
               <div className="magic-result">
 
@@ -1512,19 +1811,26 @@ function Calculator() {
 
                   <small>
 
-                    {formatGold(
+                    {formatResource(
                       Number(
-                        magicGoldAmount
+                        magicAmount
                       ) || 0
                     )}
-                    {' Gold × R$ '}
+
+                    {' '}
+
+                    {currentMagicName()}
+
+                    {' × R$ '}
+
                     {Number(
-                      goldBrlRate
+                      currentMagicRate()
                     ).toLocaleString(
                       'pt-BR',
                       {
                         minimumFractionDigits:
                           2,
+
                         maximumFractionDigits:
                           2,
                       }
@@ -1548,6 +1854,8 @@ function Calculator() {
 
               </div>
 
+              {/* AVISO */}
+
               <div className="magic-warning">
 
                 <span>
@@ -1556,9 +1864,11 @@ function Calculator() {
 
                 <p>
                   Esta ferramenta apenas
-                  calcula o valor do Gold.
-                  Nenhum Gold é retirado
-                  do saldo da Guilda.
+                  calcula o valor de Gold
+                  ou Platinum. Nenhum
+                  recurso é retirado do
+                  saldo da Guilda ou do
+                  usuário.
                 </p>
 
               </div>

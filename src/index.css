@@ -5540,4 +5540,168 @@ button {
     transform: rotate(90deg);
   }
 
+}/* =========================================================
+   GOLD + PLATINUM - CALCULADORA MÁGICA
+========================================================= */
+
+.magic-resource-cards {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 14px;
+}
+
+.magic-resource-card {
+  position: relative;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  min-height: 220px;
+
+  padding: 20px;
+
+  border: 2px solid #50577e;
+  border-radius: 15px;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      #292d55,
+      #191d3d
+    );
+
+  box-shadow:
+    inset 0 2px 0
+      rgba(255,255,255,.1),
+    0 7px 0 #090b1c;
+
+  transition:
+    .15s ease;
+}
+
+.magic-resource-card:hover {
+  transform:
+    translateY(-3px);
+}
+
+.magic-resource-symbol {
+  font-size: 48px;
+
+  margin-bottom: 14px;
+}
+
+.magic-resource-card small {
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing: 1.5px;
+
+  color: #848bab;
+}
+
+.magic-resource-card strong {
+  margin-top: 8px;
+
+  font-size: 31px;
+}
+
+.magic-resource-card > span:last-child {
+  margin-top: 4px;
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+  letter-spacing: 2px;
+}
+
+
+/* GOLD */
+
+.magic-resource-card.gold {
+  border-color:
+    #8e6b2c;
+}
+
+.magic-resource-card.gold
+.magic-resource-symbol,
+.magic-resource-card.gold strong {
+  color:
+    #ffd35e;
+}
+
+.magic-resource-card.gold.selected {
+  border-color:
+    #ffd66b;
+
+  background:
+    linear-gradient(
+      #493d42,
+      #25243c
+    );
+
+  box-shadow:
+    inset 0 2px 0
+      rgba(255,255,255,.12),
+    0 7px 0 #33200a,
+    0 0 30px
+      rgba(255,196,65,.17);
+}
+
+
+/* PLATINUM */
+
+.magic-resource-card.platinum {
+  border-color:
+    #3b849e;
+}
+
+.magic-resource-card.platinum
+.magic-resource-symbol,
+.magic-resource-card.platinum strong {
+  color:
+    #75e5ff;
+}
+
+.magic-resource-card.platinum.selected {
+  border-color:
+    #70e5ff;
+
+  background:
+    linear-gradient(
+      #29465b,
+      #1d2d48
+    );
+
+  box-shadow:
+    inset 0 2px 0
+      rgba(255,255,255,.12),
+    0 7px 0 #102b3a,
+    0 0 30px
+      rgba(78,213,255,.18);
+}
+
+
+@media (max-width: 650px) {
+
+  .magic-resource-cards {
+    grid-template-columns:
+      1fr;
+  }
+
+  .magic-resource-card {
+    min-height:
+      180px;
+  }
+
 }
