@@ -1,0 +1,1770 @@
+/* =========================================================
+   GUILDY
+   SISTEMA VISUAL RPG
+========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  color: #ffffff;
+  background: #11142f;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+
+  background:
+    radial-gradient(
+      circle at top,
+      #32306d 0%,
+      #191a42 35%,
+      #101329 75%
+    );
+
+  color: #ffffff;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.loading,
+.loading-screen {
+  min-height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  background:
+    radial-gradient(
+      circle at center,
+      #302b69,
+      #12152f 70%
+    );
+
+  color: #ffffff;
+}
+
+.loading-rune {
+  font-size: 55px;
+  color: #52ddff;
+
+  animation: loading-spin 2s linear infinite;
+
+  text-shadow:
+    0 0 12px #52ddff,
+    0 0 30px #52ddff;
+}
+
+@keyframes loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
+.login-page {
+  min-height: 100vh;
+
+  display: grid;
+  place-items: center;
+
+  padding: 24px;
+
+  background:
+    radial-gradient(
+      circle at top,
+      #3b287a 0%,
+      #1d1b4c 45%,
+      #10132d 100%
+    );
+}
+
+.login-box {
+  width: 100%;
+  max-width: 420px;
+
+  position: relative;
+
+  padding: 38px;
+
+  border-radius: 18px;
+
+  border:
+    2px solid #6877a8;
+
+  background:
+    linear-gradient(
+      180deg,
+      #29325e 0%,
+      #171c3e 100%
+    );
+
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.18),
+    inset 0 -3px 0 rgba(0,0,0,.25),
+    0 20px 60px rgba(0,0,0,.35);
+}
+
+.login-box::before {
+  content: "";
+
+  position: absolute;
+  inset: 6px;
+
+  pointer-events: none;
+
+  border:
+    1px solid rgba(90,224,255,.18);
+
+  border-radius: 13px;
+}
+
+.login-box h1 {
+  margin: 0;
+
+  font-size: 48px;
+
+  letter-spacing: 3px;
+
+  color: #ffffff;
+
+  text-shadow:
+    0 3px 0 #11152f,
+    0 0 18px rgba(79,212,255,.4);
+}
+
+.login-box > p {
+  margin: 8px 0 28px;
+
+  color: #aebce5;
+}
+
+.login-box input {
+  width: 100%;
+
+  display: block;
+
+  padding: 14px 15px;
+
+  margin-top: 13px;
+
+  border-radius: 9px;
+
+  border:
+    2px solid #566593;
+
+  background:
+    #111630;
+
+  color:
+    #ffffff;
+
+  outline:
+    none;
+
+  transition:
+    .15s;
+}
+
+.login-box input::placeholder {
+  color: #7181a8;
+}
+
+.login-box input:focus {
+  border-color: #48cfff;
+
+  box-shadow:
+    0 0 0 3px rgba(72,207,255,.12);
+}
+
+.login-box button {
+  width: 100%;
+
+  margin-top: 18px;
+
+  padding: 14px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  color: #ffffff;
+
+  font-weight: 900;
+
+  letter-spacing: 1px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #9f47f0,
+      #6824be
+    );
+
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.25),
+    0 5px 0 #3c1378,
+    0 10px 20px rgba(0,0,0,.3);
+}
+
+.login-box button:hover {
+  filter: brightness(1.12);
+
+  transform:
+    translateY(-1px);
+}
+
+.message {
+  text-align: center;
+
+  color: #ffafbf;
+}
+
+
+/* =========================================================
+   GUILD HOME
+========================================================= */
+
+.guild-page {
+  min-height: 100vh;
+
+  position: relative;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 15% 10%,
+      rgba(101,54,188,.33),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 85% 40%,
+      rgba(0,180,255,.18),
+      transparent 30%
+    ),
+    linear-gradient(
+      160deg,
+      #171638,
+      #101329 65%,
+      #0a0d1f
+    );
+}
+
+.guild-container {
+  position: relative;
+
+  z-index: 2;
+
+  width:
+    min(100% - 32px, 1120px);
+
+  margin:
+    0 auto;
+
+  padding:
+    32px 0 60px;
+}
+
+.ambient-glow {
+  position:
+    absolute;
+
+  width:
+    450px;
+
+  height:
+    450px;
+
+  border-radius:
+    50%;
+
+  filter:
+    blur(120px);
+
+  pointer-events:
+    none;
+}
+
+.ambient-glow-one {
+  top:
+    -200px;
+
+  left:
+    -130px;
+
+  background:
+    rgba(119,54,222,.2);
+}
+
+.ambient-glow-two {
+  right:
+    -200px;
+
+  bottom:
+    -180px;
+
+  background:
+    rgba(33,170,255,.16);
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.guild-header {
+  display:
+    flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    flex-start;
+
+  gap:
+    20px;
+}
+
+.brand-small {
+  display:
+    block;
+
+  margin-bottom:
+    6px;
+
+  color:
+    #70dfff;
+
+  font-size:
+    11px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    3px;
+}
+
+.brand-area h1 {
+  margin:
+    0;
+
+  font-size:
+    clamp(42px, 7vw, 70px);
+
+  line-height:
+    .95;
+
+  letter-spacing:
+    4px;
+
+  color:
+    #ffffff;
+
+  text-shadow:
+    0 4px 0 #0a0d21,
+    0 0 30px rgba(91,209,255,.25);
+}
+
+.brand-area p {
+  margin:
+    12px 0 0;
+
+  color:
+    #8f9bc8;
+}
+
+.rpg-small-button {
+  padding:
+    9px 18px;
+
+  border-radius:
+    7px;
+
+  border:
+    2px solid #6574a4;
+
+  background:
+    linear-gradient(
+      #313b68,
+      #1b2146
+    );
+
+  color:
+    white;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    1px;
+
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.15),
+    0 4px 0 #0a0d22;
+}
+
+.rpg-small-button:hover {
+  filter:
+    brightness(1.15);
+}
+
+
+/* =========================================================
+   CHARACTER PANEL
+========================================================= */
+
+.character-panel {
+  position:
+    relative;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    28px;
+
+  margin-top:
+    42px;
+
+  padding:
+    26px;
+
+  overflow:
+    hidden;
+
+  border-radius:
+    18px;
+
+  border:
+    2px solid #58699a;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(40,49,91,.95),
+      rgba(20,26,61,.95)
+    );
+
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.13),
+    inset 0 -3px 0 rgba(0,0,0,.25),
+    0 18px 40px rgba(0,0,0,.25);
+}
+
+.character-panel::after {
+  content: "";
+
+  position:
+    absolute;
+
+  right:
+    -80px;
+
+  top:
+    -120px;
+
+  width:
+    350px;
+
+  height:
+    350px;
+
+  border-radius:
+    50%;
+
+  background:
+    rgba(40,184,255,.07);
+
+  filter:
+    blur(30px);
+}
+
+.character-avatar-frame {
+  position:
+    relative;
+
+  z-index:
+    2;
+
+  flex-shrink:
+    0;
+}
+
+.avatar-ring {
+  width:
+    130px;
+
+  height:
+    130px;
+
+  padding:
+    7px;
+
+  border-radius:
+    50%;
+
+  background:
+    conic-gradient(
+      #42d8ff,
+      #6675bf,
+      #9458de,
+      #42d8ff
+    );
+
+  box-shadow:
+    0 0 0 5px #252c54,
+    0 0 35px rgba(55,211,255,.18);
+}
+
+.character-avatar {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  border-radius:
+    50%;
+
+  object-fit:
+    cover;
+
+  border:
+    4px solid #111631;
+}
+
+.avatar-fallback {
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  background:
+    linear-gradient(
+      145deg,
+      #314b77,
+      #17223d
+    );
+
+  font-size:
+    48px;
+
+  font-weight:
+    900;
+}
+
+.online-indicator {
+  position:
+    absolute;
+
+  right:
+    5px;
+
+  bottom:
+    8px;
+
+  width:
+    22px;
+
+  height:
+    22px;
+
+  border-radius:
+    50%;
+
+  border:
+    4px solid #252c54;
+
+  background:
+    #43ed75;
+
+  box-shadow:
+    0 0 15px rgba(67,237,117,.7);
+}
+
+.character-info {
+  position:
+    relative;
+
+  z-index:
+    2;
+
+  flex:
+    1;
+
+  min-width:
+    0;
+}
+
+.character-label {
+  display:
+    block;
+
+  color:
+    #5fe2ff;
+
+  font-size:
+    11px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    2px;
+}
+
+.character-info h2 {
+  margin:
+    6px 0 8px;
+
+  font-size:
+    clamp(28px, 5vw, 42px);
+
+  overflow-wrap:
+    anywhere;
+}
+
+.rank-line {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    8px;
+
+  color:
+    #c3c9e7;
+}
+
+.rank-badge {
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  width:
+    28px;
+
+  height:
+    28px;
+
+  border-radius:
+    8px;
+
+  color:
+    #ffdc55;
+
+  background:
+    #343b69;
+
+  border:
+    1px solid #6071a4;
+}
+
+.xp-area {
+  max-width:
+    470px;
+
+  margin-top:
+    20px;
+}
+
+.xp-top {
+  display:
+    flex;
+
+  justify-content:
+    space-between;
+
+  margin-bottom:
+    7px;
+
+  color:
+    #8f9ac1;
+
+  font-size:
+    10px;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    1.5px;
+}
+
+.xp-bar {
+  height:
+    13px;
+
+  padding:
+    2px;
+
+  border:
+    1px solid #536490;
+
+  border-radius:
+    20px;
+
+  background:
+    #10152f;
+}
+
+.xp-fill {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  border-radius:
+    inherit;
+
+  background:
+    linear-gradient(
+      90deg,
+      #18baff,
+      #49e0ff
+    );
+
+  box-shadow:
+    0 0 12px rgba(39,201,255,.6);
+}
+
+
+/* =========================================================
+   RESOURCES
+========================================================= */
+
+.resource-section {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap:
+    18px;
+
+  margin-top:
+    24px;
+}
+
+.resource-card {
+  position:
+    relative;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    18px;
+
+  overflow:
+    hidden;
+
+  min-height:
+    125px;
+
+  padding:
+    22px;
+
+  border-radius:
+    16px;
+
+  border:
+    2px solid #53638f;
+
+  background:
+    linear-gradient(
+      140deg,
+      #2a315a,
+      #171d40
+    );
+
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.11),
+    inset 0 -3px 0 rgba(0,0,0,.22),
+    0 12px 30px rgba(0,0,0,.22);
+}
+
+.resource-icon {
+  position:
+    relative;
+
+  z-index:
+    2;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  width:
+    68px;
+
+  height:
+    68px;
+
+  flex-shrink:
+    0;
+
+  border-radius:
+    50%;
+
+  font-size:
+    36px;
+
+  font-weight:
+    900;
+
+  border:
+    4px solid rgba(255,255,255,.25);
+}
+
+.gold-icon {
+  color:
+    #fff2a7;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ffd943,
+      #d68905
+    );
+
+  box-shadow:
+    0 0 25px rgba(255,194,22,.25);
+}
+
+.platinum-icon {
+  color:
+    #dcfbff;
+
+  background:
+    linear-gradient(
+      145deg,
+      #5ee5ff,
+      #3481d9
+    );
+
+  box-shadow:
+    0 0 25px rgba(63,213,255,.25);
+}
+
+.resource-content {
+  position:
+    relative;
+
+  z-index:
+    2;
+
+  min-width:
+    0;
+}
+
+.resource-label {
+  display:
+    block;
+
+  color:
+    #aab4db;
+
+  font-size:
+    11px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    1.5px;
+}
+
+.resource-content strong {
+  display:
+    block;
+
+  margin:
+    4px 0;
+
+  font-size:
+    clamp(25px, 4vw, 34px);
+
+  overflow-wrap:
+    anywhere;
+}
+
+.resource-description {
+  color:
+    #7180ad;
+
+  font-size:
+    12px;
+}
+
+.resource-glow {
+  position:
+    absolute;
+
+  width:
+    160px;
+
+  height:
+    160px;
+
+  right:
+    -40px;
+
+  top:
+    -50px;
+
+  border-radius:
+    50%;
+
+  filter:
+    blur(45px);
+
+  opacity:
+    .25;
+}
+
+.gold-glow {
+  background:
+    #ffbd18;
+}
+
+.platinum-glow {
+  background:
+    #38d9ff;
+}
+
+
+/* =========================================================
+   RPG MENU
+========================================================= */
+
+.guild-menu {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap:
+    20px;
+
+  margin-top:
+    28px;
+}
+
+.rpg-menu-card {
+  position:
+    relative;
+
+  min-height:
+    300px;
+
+  overflow:
+    hidden;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    flex-start;
+
+  padding:
+    24px;
+
+  border-radius:
+    18px;
+
+  color:
+    white;
+
+  text-align:
+    left;
+
+  border:
+    2px solid #6676a6;
+
+  background:
+    linear-gradient(
+      155deg,
+      #2d3765,
+      #191e42 65%
+    );
+
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.14),
+    inset 0 -4px 0 rgba(0,0,0,.28),
+    0 10px 0 #090c21,
+    0 18px 30px rgba(0,0,0,.25);
+
+  transition:
+    transform .15s ease,
+    filter .15s ease;
+}
+
+.rpg-menu-card:hover {
+  transform:
+    translateY(-6px);
+
+  filter:
+    brightness(1.1);
+}
+
+.rpg-menu-card:active {
+  transform:
+    translateY(3px);
+
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.14),
+    0 4px 0 #090c21;
+}
+
+.menu-card-shine {
+  position:
+    absolute;
+
+  width:
+    180px;
+
+  height:
+    180px;
+
+  right:
+    -60px;
+
+  top:
+    -70px;
+
+  border-radius:
+    50%;
+
+  opacity:
+    .14;
+
+  filter:
+    blur(25px);
+}
+
+.missions-card .menu-card-shine {
+  background:
+    #ff3c54;
+}
+
+.ideas-card .menu-card-shine {
+  background:
+    #b445ff;
+}
+
+.calculator-card .menu-card-shine {
+  background:
+    #24c8ff;
+}
+
+.rpg-icon-frame {
+  position:
+    relative;
+
+  z-index:
+    2;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  width:
+    90px;
+
+  height:
+    90px;
+
+  margin-bottom:
+    24px;
+
+  border-radius:
+    20px;
+
+  border:
+    3px solid rgba(255,255,255,.4);
+
+  box-shadow:
+    inset 0 3px 0 rgba(255,255,255,.26),
+    inset 0 -5px 0 rgba(0,0,0,.25),
+    0 7px 0 rgba(0,0,0,.3);
+}
+
+.red-frame {
+  background:
+    linear-gradient(
+      145deg,
+      #ff645e,
+      #bd213d
+    );
+}
+
+.purple-frame {
+  background:
+    linear-gradient(
+      145deg,
+      #c753ff,
+      #6922be
+    );
+}
+
+.blue-frame {
+  background:
+    linear-gradient(
+      145deg,
+      #46d7ff,
+      #1976d5
+    );
+}
+
+.rpg-menu-icon {
+  font-size:
+    48px;
+
+  line-height:
+    1;
+
+  text-shadow:
+    0 3px 0 rgba(0,0,0,.35);
+}
+
+.menu-card-content {
+  position:
+    relative;
+
+  z-index:
+    2;
+}
+
+.menu-category {
+  display:
+    block;
+
+  margin-bottom:
+    5px;
+
+  color:
+    #8290bf;
+
+  font-size:
+    10px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    1.5px;
+}
+
+.menu-card-content h2 {
+  margin:
+    0;
+
+  font-size:
+    27px;
+
+  letter-spacing:
+    1px;
+}
+
+.menu-card-content p {
+  margin:
+    10px 0 0;
+
+  color:
+    #a7b0d1;
+
+  line-height:
+    1.5;
+
+  font-size:
+    14px;
+}
+
+.menu-arrow {
+  position:
+    absolute;
+
+  right:
+    19px;
+
+  bottom:
+    14px;
+
+  color:
+    #7686ba;
+
+  font-size:
+    38px;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.guild-footer {
+  display:
+    flex;
+
+  justify-content:
+    center;
+
+  align-items:
+    center;
+
+  gap:
+    12px;
+
+  margin-top:
+    48px;
+
+  color:
+    #535f8a;
+
+  font-size:
+    10px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    2px;
+}
+
+
+/* =========================================================
+   PROFILE SETUP / ONBOARDING
+========================================================= */
+
+.profile-setup-page {
+  min-height:
+    100vh;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  padding:
+    24px;
+
+  background:
+    radial-gradient(
+      circle at top,
+      #3b287a 0%,
+      #1b1a48 50%,
+      #0f122b
+    );
+}
+
+.profile-setup-card {
+  width:
+    100%;
+
+  max-width:
+    500px;
+
+  padding:
+    36px;
+
+  border-radius:
+    18px;
+
+  border:
+    2px solid #6575a5;
+
+  background:
+    linear-gradient(
+      155deg,
+      #2b3564,
+      #171d40
+    );
+
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.14),
+    0 20px 60px rgba(0,0,0,.35);
+}
+
+.profile-setup-header {
+  text-align:
+    center;
+}
+
+.setup-small {
+  display:
+    block;
+
+  color:
+    #58dfff;
+
+  font-size:
+    11px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    2px;
+}
+
+.profile-setup-header h1 {
+  margin:
+    10px 0 8px;
+
+  font-size:
+    32px;
+}
+
+.profile-setup-header p {
+  color:
+    #a6afd0;
+
+  line-height:
+    1.5;
+}
+
+.avatar-selector {
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  gap:
+    16px;
+
+  margin:
+    32px 0;
+}
+
+.setup-avatar,
+.setup-avatar-empty {
+  width:
+    130px;
+
+  height:
+    130px;
+
+  border-radius:
+    50%;
+}
+
+.setup-avatar {
+  object-fit:
+    cover;
+
+  padding:
+    5px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #48dfff,
+      #9158df
+    );
+
+  box-shadow:
+    0 0 25px rgba(75,215,255,.25);
+}
+
+.setup-avatar-empty {
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  color:
+    white;
+
+  font-size:
+    44px;
+
+  font-weight:
+    900;
+
+  background:
+    #151a39;
+
+  border:
+    4px solid #586a9c;
+}
+
+.image-button {
+  padding:
+    10px 16px;
+
+  border-radius:
+    8px;
+
+  border:
+    2px solid #6273a4;
+
+  background:
+    linear-gradient(
+      #34406f,
+      #20284f
+    );
+
+  color:
+    white;
+
+  font-weight:
+    800;
+
+  cursor:
+    pointer;
+}
+
+.profile-fields {
+  display:
+    flex;
+
+  flex-direction:
+    column;
+}
+
+.profile-fields label {
+  margin-bottom:
+    8px;
+
+  color:
+    #ced5ef;
+
+  font-weight:
+    800;
+}
+
+.profile-fields input {
+  width:
+    100%;
+
+  padding:
+    14px;
+
+  border-radius:
+    9px;
+
+  border:
+    2px solid #586a96;
+
+  outline:
+    none;
+
+  color:
+    white;
+
+  background:
+    #10152e;
+}
+
+.profile-fields input:focus {
+  border-color:
+    #4ed8ff;
+}
+
+.profile-fields small {
+  margin-top:
+    6px;
+
+  color:
+    #7d89b0;
+
+  text-align:
+    right;
+}
+
+.finish-profile-button {
+  width:
+    100%;
+
+  margin-top:
+    24px;
+
+  padding:
+    14px;
+
+  border:
+    none;
+
+  border-radius:
+    9px;
+
+  color:
+    white;
+
+  font-weight:
+    900;
+
+  background:
+    linear-gradient(
+      #48d868,
+      #1ca645
+    );
+
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.25),
+    0 5px 0 #10672b;
+}
+
+.finish-profile-button:hover {
+  filter:
+    brightness(1.12);
+}
+
+.setup-message {
+  margin-top:
+    16px;
+
+  color:
+    #ffafbf;
+
+  text-align:
+    center;
+}
+
+
+/* =========================================================
+   INTERNAL PAGES
+========================================================= */
+
+.page {
+  width:
+    min(100% - 32px, 1100px);
+
+  min-height:
+    100vh;
+
+  margin:
+    auto;
+
+  padding:
+    40px 0;
+
+  color:
+    white;
+}
+
+.page h1 {
+  margin-top:
+    0;
+
+  font-size:
+    42px;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 850px) {
+
+  .guild-menu {
+    grid-template-columns:
+      1fr;
+  }
+
+  .rpg-menu-card {
+    min-height:
+      220px;
+  }
+
+  .resource-section {
+    grid-template-columns:
+      1fr;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+  .guild-container {
+    width:
+      min(100% - 20px, 1120px);
+
+    padding-top:
+      20px;
+  }
+
+  .guild-header {
+    align-items:
+      center;
+  }
+
+  .brand-area h1 {
+    font-size:
+      42px;
+  }
+
+  .brand-small {
+    font-size:
+      9px;
+  }
+
+  .brand-area p {
+    display:
+      none;
+  }
+
+  .character-panel {
+    flex-direction:
+      column;
+
+    align-items:
+      center;
+
+    text-align:
+      center;
+
+    padding:
+      25px 18px;
+  }
+
+  .avatar-ring {
+    width:
+      115px;
+
+    height:
+      115px;
+  }
+
+  .rank-line {
+    justify-content:
+      center;
+  }
+
+  .xp-area {
+    width:
+      100%;
+  }
+
+  .resource-card {
+    min-height:
+      105px;
+
+    padding:
+      17px;
+  }
+
+  .resource-icon {
+    width:
+      57px;
+
+    height:
+      57px;
+
+    font-size:
+      28px;
+  }
+
+  .resource-content strong {
+    font-size:
+      25px;
+  }
+
+  .rpg-menu-card {
+    min-height:
+      200px;
+  }
+
+  .rpg-icon-frame {
+    width:
+      70px;
+
+    height:
+      70px;
+
+    margin-bottom:
+      18px;
+  }
+
+  .rpg-menu-icon {
+    font-size:
+      38px;
+  }
+
+  .menu-card-content h2 {
+    font-size:
+      24px;
+  }
+
+  .profile-setup-card {
+    padding:
+      28px 20px;
+  }
+
+}
