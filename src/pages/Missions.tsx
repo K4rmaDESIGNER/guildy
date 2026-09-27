@@ -88,6 +88,9 @@ function Missions() {
   const [completingMissionId, setCompletingMissionId] =
     useState<string | null>(null)
 
+  const [deletingMissionId, setDeletingMissionId] =
+    useState<string | null>(null)
+
   /* =========================
      MENSAGENS
   ========================= */
@@ -318,6 +321,7 @@ function Missions() {
   ) {
     setMessage('')
     setSuccessMessage('')
+
     setAcceptingMissionId(
       missionId
     )
@@ -337,21 +341,9 @@ function Missions() {
         error
       )
 
-      if (
-        error.message
-          .toLowerCase()
-          .includes(
-            'não está mais disponível'
-          )
-      ) {
-        setMessage(
-          'Outro membro da Guilda já aceitou esta missão.'
-        )
-      } else {
-        setMessage(
-          'Não foi possível aceitar a missão.'
-        )
-      }
+      setMessage(
+        'Não foi possível aceitar a missão.'
+      )
 
       setAcceptingMissionId(null)
 
@@ -419,6 +411,96 @@ function Missions() {
   }
 
   /* =========================
+     APAGAR MISSÃO
+  ========================= */
+
+  async function deleteMission(
+    mission: Mission
+  ) {
+    let warning =
+      `Tem certeza que deseja apagar a missão "${mission.title}"?`
+
+    if (
+      mission.status === 'claimed'
+    ) {
+      warning +=
+        '\n\nEsta missão já foi aceita. Ela será removida do quadro pessoal do membro.'
+    }
+
+    if (
+      mission.status === 'completed'
+    ) {
+      warning +=
+        '\n\nATENÇÃO: esta missão já foi concluída. O Gold e o Platinum recebidos por ela também serão removidos.'
+    }
+
+    const confirmed =
+      window.confirm(
+        warning
+      )
+
+    if (!confirmed) {
+      return
+    }
+
+    setMessage('')
+    setSuccessMessage('')
+
+    setDeletingMissionId(
+      mission.id
+    )
+
+    const { error } =
+      await supabase.rpc(
+        'delete_mission',
+        {
+          p_mission_id:
+            mission.id,
+        }
+      )
+
+    if (error) {
+      console.error(
+        'Erro ao apagar missão:',
+        error
+      )
+
+      if (
+        error.message
+          .toLowerCase()
+          .includes(
+            'somente o criador'
+          )
+      ) {
+        setMessage(
+          'Somente quem criou esta missão pode apagá-la.'
+        )
+      } else {
+        setMessage(
+          'Não foi possível apagar a missão.'
+        )
+      }
+
+      setDeletingMissionId(null)
+      return
+    }
+
+    setMissions(
+      (currentMissions) =>
+        currentMissions.filter(
+          (item) =>
+            item.id !== mission.id
+        )
+    )
+
+    setDeletingMissionId(null)
+
+    setSuccessMessage(
+      `Missão "${mission.title}" apagada.`
+    )
+  }
+
+  /* =========================
      UTILITÁRIOS
   ========================= */
 
@@ -466,6 +548,10 @@ function Missions() {
       | 'mine'
       | 'completed'
   ) {
+    const canDelete =
+      mission.created_by ===
+      currentUserId
+
     return (
       <article
         key={mission.id}
@@ -481,16 +567,43 @@ function Missions() {
             ⚔
           </div>
 
-          <span
-            className={`
-              priority-badge
-              priority-badge-${mission.priority}
-            `}
-          >
-            {priorityLabel(
-              mission.priority
+          <div className="mission-card-top-actions">
+
+            <span
+              className={`
+                priority-badge
+                priority-badge-${mission.priority}
+              `}
+            >
+              {priorityLabel(
+                mission.priority
+              )}
+            </span>
+
+            {canDelete && (
+
+              <button
+                className="delete-mission-card-button"
+                title="Apagar missão"
+                onClick={() =>
+                  deleteMission(
+                    mission
+                  )
+                }
+                disabled={
+                  deletingMissionId ===
+                  mission.id
+                }
+              >
+                {deletingMissionId ===
+                mission.id
+                  ? '...'
+                  : '🗑'}
+              </button>
+
             )}
-          </span>
+
+          </div>
 
         </div>
 
@@ -522,12 +635,7 @@ function Missions() {
             mission.gold_reward
           ) > 0 && (
 
-            <div
-              className="
-                reward
-                reward-gold
-              "
-            >
+            <div className="reward reward-gold">
 
               <span>
                 ◉
@@ -556,12 +664,7 @@ function Missions() {
             mission.platinum_reward
           ) > 0 && (
 
-            <div
-              className="
-                reward
-                reward-platinum
-              "
-            >
+            <div className="reward reward-platinum">
 
               <span>
                 ◆
@@ -604,7 +707,9 @@ function Missions() {
             }
             disabled={
               acceptingMissionId ===
-              mission.id
+                mission.id ||
+              deletingMissionId ===
+                mission.id
             }
           >
 
@@ -634,7 +739,9 @@ function Missions() {
               }
               disabled={
                 completingMissionId ===
-                mission.id
+                  mission.id ||
+                deletingMissionId ===
+                  mission.id
               }
             >
 
@@ -645,11 +752,7 @@ function Missions() {
 
             </button>
 
-            <span
-              className="
-                mission-next-step
-              "
-            >
+            <span className="mission-next-step">
               Ao concluir, Gold e
               Platinum serão creditados
               automaticamente.
@@ -664,19 +767,11 @@ function Missions() {
 
           <>
 
-            <div
-              className="
-                completed-mission-seal
-              "
-            >
+            <div className="completed-mission-seal">
               ✓ MISSÃO CONCLUÍDA
             </div>
 
-            <span
-              className="
-                completed-reward-text
-              "
-            >
+            <span className="completed-reward-text">
               Recompensas creditadas
             </span>
 
@@ -697,17 +792,9 @@ function Missions() {
       activeTab === 'board'
     ) {
       return (
-        <section
-          className="
-            empty-mission-board
-          "
-        >
+        <section className="empty-mission-board">
 
-          <div
-            className="
-              empty-mission-icon
-            "
-          >
+          <div className="empty-mission-icon">
             ⚔
           </div>
 
@@ -738,17 +825,9 @@ function Missions() {
       activeTab === 'mine'
     ) {
       return (
-        <section
-          className="
-            empty-mission-board
-          "
-        >
+        <section className="empty-mission-board">
 
-          <div
-            className="
-              empty-mission-icon
-            "
-          >
+          <div className="empty-mission-icon">
             🛡
           </div>
 
@@ -776,17 +855,9 @@ function Missions() {
     }
 
     return (
-      <section
-        className="
-          empty-mission-board
-        "
-      >
+      <section className="empty-mission-board">
 
-        <div
-          className="
-            empty-mission-icon
-          "
-        >
+        <div className="empty-mission-icon">
           ★
         </div>
 
@@ -822,8 +893,6 @@ function Missions() {
     <main className="missions-page">
 
       <div className="missions-container">
-
-        {/* CABEÇALHO */}
 
         <header className="missions-header">
 
@@ -891,6 +960,7 @@ function Missions() {
             </span>
 
             <div>
+
               <strong>
                 QUADRO DA GUILDA
               </strong>
@@ -901,6 +971,7 @@ function Missions() {
                 }{' '}
                 disponíveis
               </small>
+
             </div>
 
           </button>
@@ -923,6 +994,7 @@ function Missions() {
             </span>
 
             <div>
+
               <strong>
                 MINHAS MISSÕES
               </strong>
@@ -933,6 +1005,7 @@ function Missions() {
                 }{' '}
                 em andamento
               </small>
+
             </div>
 
           </button>
@@ -958,6 +1031,7 @@ function Missions() {
             </span>
 
             <div>
+
               <strong>
                 CONCLUÍDAS
               </strong>
@@ -968,6 +1042,7 @@ function Missions() {
                 }{' '}
                 finalizadas
               </small>
+
             </div>
 
           </button>
@@ -1006,23 +1081,17 @@ function Missions() {
 
         </section>
 
-        {/* ERRO */}
-
         {message && (
           <div className="mission-message">
             {message}
           </div>
         )}
 
-        {/* SUCESSO */}
-
         {successMessage && (
           <div className="mission-success-message">
             ✓ {successMessage}
           </div>
         )}
-
-        {/* CONTEÚDO */}
 
         {loading ? (
 
