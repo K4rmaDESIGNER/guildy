@@ -1,37 +1,85 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+
+type Priority =
+  | 'low'
+  | 'medium'
+  | 'high'
+  | 'critical'
+
+type MissionStatus =
+  | 'available'
+  | 'claimed'
+  | 'completed'
+  | 'cancelled'
 
 type Mission = {
   id: string
   title: string
   description: string | null
-  priority: 'low' | 'medium' | 'high' | 'critical'
+  priority: Priority
   gold_reward: number
   platinum_reward: number
-  status: string
+  status: MissionStatus
+
+  created_by: string
+  claimed_by: string | null
+
   created_at: string
+  claimed_at: string | null
+  completed_at: string | null
 }
+
+type Tab =
+  | 'board'
+  | 'mine'
+  | 'completed'
 
 function Missions() {
   const navigate = useNavigate()
 
-  const [missions, setMissions] = useState<Mission[]>([])
-  const [loading, setLoading] = useState(true)
+  const [missions, setMissions] =
+    useState<Mission[]>([])
+
+  const [currentUserId, setCurrentUserId] =
+    useState<string | null>(null)
+
+  const [loading, setLoading] =
+    useState(true)
+
+  const [activeTab, setActiveTab] =
+    useState<Tab>('board')
 
   const [showCreateMission, setShowCreateMission] =
     useState(false)
 
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
+  const [title, setTitle] =
+    useState('')
+
+  const [description, setDescription] =
+    useState('')
+
   const [priority, setPriority] =
-    useState<Mission['priority']>('medium')
+    useState<Priority>('medium')
 
-  const [goldReward, setGoldReward] = useState('')
-  const [platinumReward, setPlatinumReward] = useState('')
+  const [goldReward, setGoldReward] =
+    useState('')
 
-  const [creating, setCreating] = useState(false)
-  const [message, setMessage] = useState('')
+  const [platinumReward, setPlatinumReward] =
+    useState('')
+
+  const [creating, setCreating] =
+    useState(false)
+
+  const [acceptingMissionId, setAcceptingMissionId] =
+    useState<string | null>(null)
+
+  const [message, setMessage] =
+    useState('')
+
+  const [successMessage, setSuccessMessage] =
+    useState('')
 
   useEffect(() => {
     loadMissions()
@@ -39,6 +87,17 @@ function Missions() {
 
   async function loadMissions() {
     setLoading(true)
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      navigate('/')
+      return
+    }
+
+    setCurrentUserId(user.id)
 
     const { data, error } = await supabase
       .from('missions')
@@ -50,9 +109,13 @@ function Missions() {
         gold_reward,
         platinum_reward,
         status,
-        created_at
+        created_by,
+        claimed_by,
+        created_at,
+        claimed_at,
+        completed_at
       `)
-      .eq('status', 'available')
+      .neq('status', 'cancelled')
       .order('created_at', {
         ascending: false,
       })
@@ -75,8 +138,41 @@ function Missions() {
     setLoading(false)
   }
 
+  const boardMissions =
+    useMemo(
+      () =>
+        missions.filter(
+          (mission) =>
+            mission.status === 'available'
+        ),
+      [missions]
+    )
+
+  const myMissions =
+    useMemo(
+      () =>
+        missions.filter(
+          (mission) =>
+            mission.status === 'claimed' &&
+            mission.claimed_by === currentUserId
+        ),
+      [missions, currentUserId]
+    )
+
+  const completedMissions =
+    useMemo(
+      () =>
+        missions.filter(
+          (mission) =>
+            mission.status === 'completed' &&
+            mission.claimed_by === currentUserId
+        ),
+      [missions, currentUserId]
+    )
+
   async function createMission() {
     setMessage('')
+    setSuccessMessage('')
 
     if (!title.trim()) {
       setMessage(
@@ -86,10 +182,14 @@ function Missions() {
     }
 
     const gold =
-      Number(goldReward.replace(',', '.')) || 0
+      Number(
+        goldReward.replace(',', '.')
+      ) || 0
 
     const platinum =
-      Number(platinumReward.replace(',', '.')) || 0
+      Number(
+        platinumReward.replace(',', '.')
+      ) || 0
 
     if (gold < 0 || platinum < 0) {
       setMessage(
@@ -98,7 +198,10 @@ function Missions() {
       return
     }
 
-    if (gold === 0 && platinum === 0) {
+    if (
+      gold === 0 &&
+      platinum === 0
+    ) {
       setMessage(
         'A missão precisa oferecer Gold, Platinum ou ambos.'
       )
@@ -118,22 +221,31 @@ function Missions() {
 
     setCreating(true)
 
-    const { error } = await supabase
-      .from('missions')
-      .insert({
-        title: title.trim(),
-        description:
-          description.trim() || null,
+    const { error } =
+      await supabase
+        .from('missions')
+        .insert({
+          title:
+            title.trim(),
 
-        priority,
+          description:
+            description.trim() ||
+            null,
 
-        gold_reward: gold,
-        platinum_reward: platinum,
+          priority,
 
-        status: 'available',
+          gold_reward:
+            gold,
 
-        created_by: user.id,
-      })
+          platinum_reward:
+            platinum,
+
+          status:
+            'available',
+
+          created_by:
+            user.id,
+        })
 
     if (error) {
       console.error(
@@ -158,13 +270,78 @@ function Missions() {
     setShowCreateMission(false)
     setCreating(false)
 
+    setSuccessMessage(
+      'Missão publicada no Quadro da Guilda.'
+    )
+
+    setActiveTab('board')
+
     await loadMissions()
   }
 
-  function priorityLabel(
-    missionPriority: Mission['priority']
+  async function acceptMission(
+    missionId: string
   ) {
-    switch (missionPriority) {
+    setMessage('')
+    setSuccessMessage('')
+    setAcceptingMissionId(
+      missionId
+    )
+
+    const { error } =
+      await supabase.rpc(
+        'claim_mission',
+        {
+          p_mission_id:
+            missionId,
+        }
+      )
+
+    if (error) {
+      console.error(
+        'Erro ao aceitar missão:',
+        error
+      )
+
+      if (
+        error.message
+          .toLowerCase()
+          .includes(
+            'não está mais disponível'
+          )
+      ) {
+        setMessage(
+          'Outro membro da Guilda já aceitou esta missão.'
+        )
+      } else {
+        setMessage(
+          'Não foi possível aceitar a missão.'
+        )
+      }
+
+      setAcceptingMissionId(null)
+
+      await loadMissions()
+      return
+    }
+
+    setAcceptingMissionId(null)
+
+    await loadMissions()
+
+    setActiveTab('mine')
+
+    setSuccessMessage(
+      'Missão adicionada ao seu quadro pessoal!'
+    )
+  }
+
+  function priorityLabel(
+    missionPriority: Priority
+  ) {
+    switch (
+      missionPriority
+    ) {
       case 'low':
         return 'BAIXA'
 
@@ -176,35 +353,360 @@ function Missions() {
 
       case 'critical':
         return 'CRÍTICA'
-
-      default:
-        return 'MÉDIA'
     }
   }
 
-  function formatValue(value: number) {
-    return Number(value).toLocaleString(
-      'pt-BR',
-      {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }
+  function formatValue(
+    value: number
+  ) {
+    return Number(value)
+      .toLocaleString(
+        'pt-BR',
+        {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }
+      )
+  }
+
+  function renderMissionCard(
+    mission: Mission,
+    mode:
+      | 'board'
+      | 'mine'
+      | 'completed'
+  ) {
+    return (
+      <article
+        key={mission.id}
+        className={`
+          mission-card
+          priority-${mission.priority}
+        `}
+      >
+
+        <div className="mission-card-top">
+
+          <div className="mission-symbol">
+            ⚔
+          </div>
+
+          <span
+            className={`
+              priority-badge
+              priority-badge-${mission.priority}
+            `}
+          >
+            {priorityLabel(
+              mission.priority
+            )}
+          </span>
+
+        </div>
+
+        <span className="mission-type">
+
+          {mode === 'board' &&
+            'MISSÃO DA GUILDA'}
+
+          {mode === 'mine' &&
+            'MISSÃO EM ANDAMENTO'}
+
+          {mode === 'completed' &&
+            'MISSÃO CONCLUÍDA'}
+
+        </span>
+
+        <h2>
+          {mission.title}
+        </h2>
+
+        <p className="mission-description">
+          {mission.description ||
+            'Nenhuma descrição foi adicionada.'}
+        </p>
+
+        <div className="mission-rewards">
+
+          {Number(
+            mission.gold_reward
+          ) > 0 && (
+
+            <div
+              className="
+                reward
+                reward-gold
+              "
+            >
+
+              <span>
+                ◉
+              </span>
+
+              <div>
+
+                <small>
+                  GOLD
+                </small>
+
+                <strong>
+                  +
+                  {formatValue(
+                    mission.gold_reward
+                  )}
+                </strong>
+
+              </div>
+
+            </div>
+
+          )}
+
+          {Number(
+            mission.platinum_reward
+          ) > 0 && (
+
+            <div
+              className="
+                reward
+                reward-platinum
+              "
+            >
+
+              <span>
+                ◆
+              </span>
+
+              <div>
+
+                <small>
+                  PLATINUM
+                </small>
+
+                <strong>
+                  +
+                  {formatValue(
+                    mission.platinum_reward
+                  )}
+                </strong>
+
+              </div>
+
+            </div>
+
+          )}
+
+        </div>
+
+        {mode === 'board' && (
+
+          <button
+            className="
+              accept-mission-button
+              accept-mission-active
+            "
+            onClick={() =>
+              acceptMission(
+                mission.id
+              )
+            }
+            disabled={
+              acceptingMissionId ===
+              mission.id
+            }
+          >
+
+            {acceptingMissionId ===
+            mission.id
+              ? 'ACEITANDO...'
+              : 'ACEITAR MISSÃO'}
+
+          </button>
+
+        )}
+
+        {mode === 'mine' && (
+
+          <>
+            <button
+              className="
+                complete-mission-button
+              "
+              disabled
+            >
+              CONCLUIR MISSÃO
+            </button>
+
+            <span
+              className="
+                mission-next-step
+              "
+            >
+              Conclusão será ativada
+              na próxima etapa
+            </span>
+          </>
+
+        )}
+
+        {mode ===
+          'completed' && (
+
+          <div
+            className="
+              completed-mission-seal
+            "
+          >
+            ✓ MISSÃO CONCLUÍDA
+          </div>
+
+        )}
+
+      </article>
     )
   }
 
+  function renderEmptyState() {
+    if (
+      activeTab === 'board'
+    ) {
+      return (
+        <section
+          className="
+            empty-mission-board
+          "
+        >
+
+          <div
+            className="
+              empty-mission-icon
+            "
+          >
+            ⚔
+          </div>
+
+          <h2>
+            Nenhuma missão disponível
+          </h2>
+
+          <p>
+            A Guilda está tranquila...
+            por enquanto.
+          </p>
+
+          <button
+            onClick={() =>
+              setShowCreateMission(
+                true
+              )
+            }
+          >
+            CRIAR MISSÃO
+          </button>
+
+        </section>
+      )
+    }
+
+    if (
+      activeTab === 'mine'
+    ) {
+      return (
+        <section
+          className="
+            empty-mission-board
+          "
+        >
+
+          <div
+            className="
+              empty-mission-icon
+            "
+          >
+            🛡
+          </div>
+
+          <h2>
+            Nenhuma missão ativa
+          </h2>
+
+          <p>
+            Vá até o Quadro da Guilda
+            e aceite um desafio.
+          </p>
+
+          <button
+            onClick={() =>
+              setActiveTab(
+                'board'
+              )
+            }
+          >
+            VER QUADRO
+          </button>
+
+        </section>
+      )
+    }
+
+    return (
+      <section
+        className="
+          empty-mission-board
+        "
+      >
+
+        <div
+          className="
+            empty-mission-icon
+          "
+        >
+          ★
+        </div>
+
+        <h2>
+          Nenhuma missão concluída
+        </h2>
+
+        <p>
+          Suas conquistas aparecerão
+          aqui.
+        </p>
+
+      </section>
+    )
+  }
+
+  const visibleMissions =
+    activeTab === 'board'
+      ? boardMissions
+      : activeTab === 'mine'
+        ? myMissions
+        : completedMissions
+
   return (
-    <main className="missions-page">
+    <main
+      className="missions-page"
+    >
 
-      <div className="missions-container">
+      <div
+        className="
+          missions-container
+        "
+      >
 
-        {/* CABEÇALHO */}
-
-        <header className="missions-header">
+        <header
+          className="
+            missions-header
+          "
+        >
 
           <div>
 
             <button
-              className="mission-back-button"
+              className="
+                mission-back-button
+              "
               onClick={() =>
                 navigate('/home')
               }
@@ -212,7 +714,11 @@ function Missions() {
               ← VOLTAR
             </button>
 
-            <span className="missions-kicker">
+            <span
+              className="
+                missions-kicker
+              "
+            >
               QUADRO DA GUILDA
             </span>
 
@@ -221,17 +727,23 @@ function Missions() {
             </h1>
 
             <p>
-              Aceite desafios, cumpra tarefas
-              e fortaleça a Guilda.
+              Aceite desafios,
+              cumpra tarefas e
+              fortaleça a Guilda.
             </p>
 
           </div>
 
           <button
-            className="create-mission-button"
+            className="
+              create-mission-button
+            "
             onClick={() => {
               setMessage('')
-              setShowCreateMission(true)
+              setSuccessMessage('')
+              setShowCreateMission(
+                true
+              )
             }}
           >
             + NOVA MISSÃO
@@ -239,190 +751,208 @@ function Missions() {
 
         </header>
 
-        {/* CONTADOR */}
+        {/* ABAS */}
 
-        <section className="mission-board-info">
+        <nav
+          className="
+            mission-tabs
+          "
+        >
+
+          <button
+            className={
+              activeTab === 'board'
+                ? 'mission-tab active'
+                : 'mission-tab'
+            }
+            onClick={() =>
+              setActiveTab(
+                'board'
+              )
+            }
+          >
+
+            <span>
+              ⚔
+            </span>
+
+            <div>
+              <strong>
+                QUADRO DA GUILDA
+              </strong>
+
+              <small>
+                {
+                  boardMissions.length
+                }{' '}
+                disponíveis
+              </small>
+            </div>
+
+          </button>
+
+          <button
+            className={
+              activeTab === 'mine'
+                ? 'mission-tab active'
+                : 'mission-tab'
+            }
+            onClick={() =>
+              setActiveTab(
+                'mine'
+              )
+            }
+          >
+
+            <span>
+              🛡
+            </span>
+
+            <div>
+              <strong>
+                MINHAS MISSÕES
+              </strong>
+
+              <small>
+                {
+                  myMissions.length
+                }{' '}
+                em andamento
+              </small>
+            </div>
+
+          </button>
+
+          <button
+            className={
+              activeTab ===
+              'completed'
+                ? 'mission-tab active'
+                : 'mission-tab'
+            }
+            onClick={() =>
+              setActiveTab(
+                'completed'
+              )
+            }
+          >
+
+            <span>
+              ★
+            </span>
+
+            <div>
+              <strong>
+                CONCLUÍDAS
+              </strong>
+
+              <small>
+                {
+                  completedMissions.length
+                }{' '}
+                finalizadas
+              </small>
+            </div>
+
+          </button>
+
+        </nav>
+
+        {/* STATUS */}
+
+        <section
+          className="
+            mission-board-info
+          "
+        >
 
           <div>
+
             <span>
-              MISSÕES DISPONÍVEIS
+              {activeTab === 'board'
+                ? 'MISSÕES DISPONÍVEIS'
+                : activeTab ===
+                    'mine'
+                  ? 'MISSÕES ATIVAS'
+                  : 'MISSÕES CONCLUÍDAS'}
             </span>
 
             <strong>
-              {missions.length}
+              {
+                visibleMissions.length
+              }
             </strong>
+
           </div>
 
-          <div className="mission-board-status">
-            <span className="status-light" />
+          <div
+            className="
+              mission-board-status
+            "
+          >
+
+            <span
+              className="
+                status-light
+              "
+            />
+
             QUADRO ATIVO
+
           </div>
 
         </section>
 
-        {/* MENSAGEM */}
-
-        {message && !showCreateMission && (
-          <div className="mission-message">
+        {message && (
+          <div
+            className="
+              mission-message
+            "
+          >
             {message}
           </div>
         )}
 
-        {/* QUADRO */}
+        {successMessage && (
+          <div
+            className="
+              mission-success-message
+            "
+          >
+            ✓ {successMessage}
+          </div>
+        )}
 
         {loading ? (
 
-          <div className="mission-loading">
+          <div
+            className="
+              mission-loading
+            "
+          >
             Carregando missões...
           </div>
 
-        ) : missions.length === 0 ? (
+        ) : visibleMissions
+            .length === 0 ? (
 
-          <section className="empty-mission-board">
-
-            <div className="empty-mission-icon">
-              ⚔
-            </div>
-
-            <h2>
-              Nenhuma missão disponível
-            </h2>
-
-            <p>
-              A Guilda está tranquila...
-              por enquanto.
-            </p>
-
-            <button
-              onClick={() =>
-                setShowCreateMission(true)
-              }
-            >
-              CRIAR PRIMEIRA MISSÃO
-            </button>
-
-          </section>
+          renderEmptyState()
 
         ) : (
 
-          <section className="mission-grid">
+          <section
+            className="
+              mission-grid
+            "
+          >
 
-            {missions.map((mission) => (
-
-              <article
-                key={mission.id}
-                className={`
-                  mission-card
-                  priority-${mission.priority}
-                `}
-              >
-
-                <div className="mission-card-top">
-
-                  <div className="mission-symbol">
-                    ⚔
-                  </div>
-
-                  <span
-                    className={`
-                      priority-badge
-                      priority-badge-${mission.priority}
-                    `}
-                  >
-                    {priorityLabel(
-                      mission.priority
-                    )}
-                  </span>
-
-                </div>
-
-                <span className="mission-type">
-                  MISSÃO DA GUILDA
-                </span>
-
-                <h2>
-                  {mission.title}
-                </h2>
-
-                <p className="mission-description">
-
-                  {mission.description ||
-                    'Nenhuma descrição foi adicionada.'}
-
-                </p>
-
-                <div className="mission-rewards">
-
-                  {Number(
-                    mission.gold_reward
-                  ) > 0 && (
-
-                    <div className="reward reward-gold">
-
-                      <span>
-                        ◉
-                      </span>
-
-                      <div>
-                        <small>
-                          GOLD
-                        </small>
-
-                        <strong>
-                          +
-                          {formatValue(
-                            mission.gold_reward
-                          )}
-                        </strong>
-                      </div>
-
-                    </div>
-
-                  )}
-
-                  {Number(
-                    mission.platinum_reward
-                  ) > 0 && (
-
-                    <div className="reward reward-platinum">
-
-                      <span>
-                        ◆
-                      </span>
-
-                      <div>
-                        <small>
-                          PLATINUM
-                        </small>
-
-                        <strong>
-                          +
-                          {formatValue(
-                            mission.platinum_reward
-                          )}
-                        </strong>
-                      </div>
-
-                    </div>
-
-                  )}
-
-                </div>
-
-                <button
-                  className="accept-mission-button"
-                  disabled
-                >
-                  ACEITAR MISSÃO
-                </button>
-
-                <span className="coming-soon-label">
-                  Em breve
-                </span>
-
-              </article>
-
-            ))}
+            {visibleMissions.map(
+              (mission) =>
+                renderMissionCard(
+                  mission,
+                  activeTab
+                )
+            )}
 
           </section>
 
@@ -435,22 +965,33 @@ function Missions() {
       {showCreateMission && (
 
         <div
-          className="mission-modal-overlay"
+          className="
+            mission-modal-overlay
+          "
           onMouseDown={() =>
-            setShowCreateMission(false)
+            setShowCreateMission(
+              false
+            )
           }
         >
 
           <section
-            className="mission-modal"
+            className="
+              mission-modal
+            "
             onMouseDown={(event) =>
               event.stopPropagation()
             }
           >
 
-            <div className="mission-modal-header">
+            <div
+              className="
+                mission-modal-header
+              "
+            >
 
               <div>
+
                 <span>
                   QUADRO DA GUILDA
                 </span>
@@ -458,11 +999,14 @@ function Missions() {
                 <h2>
                   NOVA MISSÃO
                 </h2>
+
               </div>
 
               <button
                 onClick={() =>
-                  setShowCreateMission(false)
+                  setShowCreateMission(
+                    false
+                  )
                 }
               >
                 ✕
@@ -470,7 +1014,11 @@ function Missions() {
 
             </div>
 
-            <div className="mission-form">
+            <div
+              className="
+                mission-form
+              "
+            >
 
               <label>
                 Nome da missão
@@ -479,7 +1027,9 @@ function Missions() {
               <input
                 type="text"
                 maxLength={80}
-                placeholder="Ex: Cadastrar novos produtos"
+                placeholder="
+                  Ex: Cadastrar novos produtos
+                "
                 value={title}
                 onChange={(event) =>
                   setTitle(
@@ -495,7 +1045,9 @@ function Missions() {
               <textarea
                 rows={5}
                 maxLength={500}
-                placeholder="Explique o que precisa ser feito..."
+                placeholder="
+                  Explique o que precisa ser feito...
+                "
                 value={description}
                 onChange={(event) =>
                   setDescription(
@@ -508,16 +1060,23 @@ function Missions() {
                 Prioridade
               </label>
 
-              <div className="priority-selector">
+              <div
+                className="
+                  priority-selector
+                "
+              >
 
                 <button
                   className={
-                    priority === 'low'
+                    priority ===
+                    'low'
                       ? 'selected'
                       : ''
                   }
                   onClick={() =>
-                    setPriority('low')
+                    setPriority(
+                      'low'
+                    )
                   }
                 >
                   BAIXA
@@ -525,12 +1084,15 @@ function Missions() {
 
                 <button
                   className={
-                    priority === 'medium'
+                    priority ===
+                    'medium'
                       ? 'selected'
                       : ''
                   }
                   onClick={() =>
-                    setPriority('medium')
+                    setPriority(
+                      'medium'
+                    )
                   }
                 >
                   MÉDIA
@@ -538,12 +1100,15 @@ function Missions() {
 
                 <button
                   className={
-                    priority === 'high'
+                    priority ===
+                    'high'
                       ? 'selected'
                       : ''
                   }
                   onClick={() =>
-                    setPriority('high')
+                    setPriority(
+                      'high'
+                    )
                   }
                 >
                   ALTA
@@ -551,12 +1116,15 @@ function Missions() {
 
                 <button
                   className={
-                    priority === 'critical'
+                    priority ===
+                    'critical'
                       ? 'selected'
                       : ''
                   }
                   onClick={() =>
-                    setPriority('critical')
+                    setPriority(
+                      'critical'
+                    )
                   }
                 >
                   CRÍTICA
@@ -564,7 +1132,11 @@ function Missions() {
 
               </div>
 
-              <div className="reward-input-grid">
+              <div
+                className="
+                  reward-input-grid
+                "
+              >
 
                 <div>
 
@@ -598,7 +1170,9 @@ function Missions() {
                     min="0"
                     step="0.01"
                     placeholder="0"
-                    value={platinumReward}
+                    value={
+                      platinumReward
+                    }
                     onChange={(event) =>
                       setPlatinumReward(
                         event.target.value
@@ -611,15 +1185,25 @@ function Missions() {
               </div>
 
               {message && (
-                <div className="mission-form-message">
+                <div
+                  className="
+                    mission-form-message
+                  "
+                >
                   {message}
                 </div>
               )}
 
               <button
-                className="confirm-create-mission"
-                onClick={createMission}
-                disabled={creating}
+                className="
+                  confirm-create-mission
+                "
+                onClick={
+                  createMission
+                }
+                disabled={
+                  creating
+                }
               >
                 {creating
                   ? 'CRIANDO MISSÃO...'

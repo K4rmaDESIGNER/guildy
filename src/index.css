@@ -2608,3 +2608,292 @@ button {
     padding: 22px 17px;
   }
 }
+
+/* =========================================================
+   MISSÕES - ABAS E ACEITAR
+========================================================= */
+
+.mission-tabs {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 12px;
+
+  margin-top: 36px;
+  margin-bottom: 15px;
+}
+
+.mission-tab {
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
+  min-height: 75px;
+
+  padding: 13px 16px;
+
+  text-align: left;
+
+  border:
+    2px solid #455582;
+
+  border-radius:
+    11px;
+
+  background:
+    linear-gradient(
+      #242c55,
+      #181d3e
+    );
+
+  color:
+    #7583ae;
+
+  transition:
+    .15s ease;
+}
+
+.mission-tab > span {
+  font-size: 25px;
+}
+
+.mission-tab div {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.mission-tab strong {
+  font-size: 11px;
+
+  letter-spacing:
+    1px;
+}
+
+.mission-tab small {
+  color: #64719b;
+
+  font-size: 10px;
+}
+
+.mission-tab:hover {
+  border-color: #6b7cac;
+
+  transform:
+    translateY(-2px);
+}
+
+.mission-tab.active {
+  border-color:
+    #6bddff;
+
+  color:
+    #ffffff;
+
+  background:
+    linear-gradient(
+      #32426c,
+      #20284c
+    );
+
+  box-shadow:
+    inset 0 2px 0
+      rgba(255,255,255,.12),
+    0 0 22px
+      rgba(62,206,255,.08);
+}
+
+.mission-tab.active small {
+  color:
+    #86ddf3;
+}
+
+
+/* ACEITAR MISSÃO */
+
+.accept-mission-active {
+  cursor: pointer;
+
+  color:
+    #ffffff;
+
+  border-color:
+    #65e88f;
+
+  background:
+    linear-gradient(
+      #42d76e,
+      #1b9b45
+    );
+
+  box-shadow:
+    inset 0 2px 0
+      rgba(255,255,255,.25),
+    0 5px 0 #10602c;
+}
+
+.accept-mission-active:hover {
+  filter:
+    brightness(1.1);
+
+  transform:
+    translateY(-1px);
+}
+
+.accept-mission-active:disabled {
+  opacity: .7;
+
+  cursor: wait;
+
+  color: white;
+}
+
+
+/* MINHA MISSÃO */
+
+.complete-mission-button {
+  width: 100%;
+
+  margin-top: 18px;
+
+  padding: 12px;
+
+  border:
+    2px solid #7865c9;
+
+  border-radius:
+    9px;
+
+  color:
+    #8e83c1;
+
+  background:
+    linear-gradient(
+      #353160,
+      #25234a
+    );
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    1px;
+}
+
+.complete-mission-button:disabled {
+  cursor:
+    default;
+
+  opacity:
+    .75;
+}
+
+.mission-next-step {
+  display:
+    block;
+
+  margin-top:
+    8px;
+
+  color:
+    #59648d;
+
+  font-size:
+    9px;
+
+  font-weight:
+    900;
+
+  text-align:
+    center;
+
+  letter-spacing:
+    .7px;
+}
+
+
+/* CONCLUÍDAS */
+
+.completed-mission-seal {
+  margin-top:
+    18px;
+
+  padding:
+    12px;
+
+  border:
+    1px solid #31a85b;
+
+  border-radius:
+    9px;
+
+  color:
+    #6bf599;
+
+  background:
+    rgba(44,164,87,.12);
+
+  text-align:
+    center;
+
+  font-size:
+    11px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    1px;
+}
+
+
+/* MENSAGEM DE SUCESSO */
+
+.mission-success-message {
+  margin-top:
+    18px;
+
+  padding:
+    12px 14px;
+
+  border:
+    1px solid #38b86a;
+
+  border-radius:
+    8px;
+
+  color:
+    #7ff3a4;
+
+  background:
+    rgba(41,164,82,.12);
+
+  font-size:
+    13px;
+
+  font-weight:
+    700;
+}
+
+
+/* RESPONSIVO */
+
+@media (max-width: 700px) {
+
+  .mission-tabs {
+    grid-template-columns:
+      1fr;
+  }
+
+  .mission-tab {
+    min-height:
+      65px;
+  }
+
+}
