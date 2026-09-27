@@ -125,6 +125,9 @@ function Ideas() {
   const [loading, setLoading] =
     useState(true)
 
+  const [deletingBoardId, setDeletingBoardId] =
+    useState<string | null>(null)
+
   /* =======================================================
      CRIAR UNIVERSO
   ======================================================= */
@@ -150,6 +153,12 @@ function Ideas() {
 
   const [loadingWorld, setLoadingWorld] =
     useState(false)
+
+  const [selectedNodeId, setSelectedNodeId] =
+    useState<string | null>(null)
+
+  const [deletingNodeId, setDeletingNodeId] =
+    useState<string | null>(null)
 
   /* =======================================================
      NOVA IDEIA
@@ -298,6 +307,10 @@ function Ideas() {
     setShowCreateBoard(false)
     setCreatingBoard(false)
 
+    setNodes([])
+    setEdges([])
+    setSelectedNodeId(null)
+
     await loadBoards()
 
     setSelectedBoard(
@@ -310,6 +323,135 @@ function Ideas() {
   }
 
   /* =======================================================
+     APAGAR UNIVERSO
+  ======================================================= */
+
+  async function deleteBoard(
+    board: IdeaBoard
+  ) {
+    const confirmed =
+      window.confirm(
+        `Tem certeza que deseja apagar o universo "${board.name}"?\n\nTodas as ideias e conexões dentro dele também serão apagadas.`
+      )
+
+    if (!confirmed) {
+      return
+    }
+
+    setMessage('')
+    setSuccessMessage('')
+    setDeletingBoardId(board.id)
+
+    /*
+      Primeiro apagamos todas as conexões.
+    */
+
+    const {
+      error: edgesError,
+    } = await supabase
+      .from('idea_edges')
+      .delete()
+      .eq(
+        'board_id',
+        board.id
+      )
+
+    if (edgesError) {
+      console.error(
+        'Erro ao apagar conexões:',
+        edgesError
+      )
+
+      setMessage(
+        'Não foi possível apagar as conexões deste universo.'
+      )
+
+      setDeletingBoardId(null)
+      return
+    }
+
+    /*
+      Depois apagamos todas as ideias.
+    */
+
+    const {
+      error: nodesError,
+    } = await supabase
+      .from('idea_nodes')
+      .delete()
+      .eq(
+        'board_id',
+        board.id
+      )
+
+    if (nodesError) {
+      console.error(
+        'Erro ao apagar ideias:',
+        nodesError
+      )
+
+      setMessage(
+        'Não foi possível apagar as ideias deste universo.'
+      )
+
+      setDeletingBoardId(null)
+      return
+    }
+
+    /*
+      Por último apagamos o universo.
+    */
+
+    const {
+      error: boardError,
+    } = await supabase
+      .from('idea_boards')
+      .delete()
+      .eq(
+        'id',
+        board.id
+      )
+
+    if (boardError) {
+      console.error(
+        'Erro ao apagar universo:',
+        boardError
+      )
+
+      setMessage(
+        'Não foi possível apagar o universo.'
+      )
+
+      setDeletingBoardId(null)
+      return
+    }
+
+    setBoards(
+      (currentBoards) =>
+        currentBoards.filter(
+          (item) =>
+            item.id !== board.id
+        )
+    )
+
+    if (
+      selectedBoard?.id ===
+      board.id
+    ) {
+      setSelectedBoard(null)
+      setNodes([])
+      setEdges([])
+      setSelectedNodeId(null)
+    }
+
+    setDeletingBoardId(null)
+
+    setSuccessMessage(
+      `Universo "${board.name}" apagado.`
+    )
+  }
+
+  /* =======================================================
      ABRIR UNIVERSO
   ======================================================= */
 
@@ -318,6 +460,7 @@ function Ideas() {
   ) {
     setSelectedBoard(board)
 
+    setSelectedNodeId(null)
     setMessage('')
     setSuccessMessage('')
 
@@ -597,6 +740,117 @@ function Ideas() {
   }
 
   /* =======================================================
+     APAGAR IDEIA
+  ======================================================= */
+
+  async function deleteThought(
+    nodeId: string
+  ) {
+    const node =
+      nodes.find(
+        (item) =>
+          item.id === nodeId
+      )
+
+    const title =
+      node?.data.title ??
+      'esta ideia'
+
+    const confirmed =
+      window.confirm(
+        `Apagar "${title}"?\n\nAs conexões ligadas a esta ideia também serão apagadas.`
+      )
+
+    if (!confirmed) {
+      return
+    }
+
+    setMessage('')
+    setSuccessMessage('')
+    setDeletingNodeId(nodeId)
+
+    /*
+      Primeiro apagamos as linhas
+      que entram ou saem desta ideia.
+    */
+
+    const {
+      error: edgesError,
+    } = await supabase
+      .from('idea_edges')
+      .delete()
+      .or(
+        `source_node_id.eq.${nodeId},target_node_id.eq.${nodeId}`
+      )
+
+    if (edgesError) {
+      console.error(
+        'Erro ao apagar conexões:',
+        edgesError
+      )
+
+      setMessage(
+        'Não foi possível apagar as conexões desta ideia.'
+      )
+
+      setDeletingNodeId(null)
+      return
+    }
+
+    /*
+      Agora apagamos a própria ideia.
+    */
+
+    const {
+      error: nodeError,
+    } = await supabase
+      .from('idea_nodes')
+      .delete()
+      .eq(
+        'id',
+        nodeId
+      )
+
+    if (nodeError) {
+      console.error(
+        'Erro ao apagar ideia:',
+        nodeError
+      )
+
+      setMessage(
+        'Não foi possível apagar a ideia.'
+      )
+
+      setDeletingNodeId(null)
+      return
+    }
+
+    setNodes(
+      (currentNodes) =>
+        currentNodes.filter(
+          (item) =>
+            item.id !== nodeId
+        )
+    )
+
+    setEdges(
+      (currentEdges) =>
+        currentEdges.filter(
+          (edge) =>
+            edge.source !== nodeId &&
+            edge.target !== nodeId
+        )
+    )
+
+    setSelectedNodeId(null)
+    setDeletingNodeId(null)
+
+    setSuccessMessage(
+      `"${title}" foi apagada.`
+    )
+  }
+
+  /* =======================================================
      SALVAR POSIÇÃO
   ======================================================= */
 
@@ -789,6 +1043,7 @@ function Ideas() {
                   setSelectedBoard(null)
                   setNodes([])
                   setEdges([])
+                  setSelectedNodeId(null)
                   setMessage('')
                   setSuccessMessage('')
                 }}
@@ -813,16 +1068,60 @@ function Ideas() {
 
             </div>
 
-            <button
-              className="create-thought-button active"
-              onClick={() => {
-                setMessage('')
-                setSuccessMessage('')
-                setShowCreateThought(true)
-              }}
-            >
-              + NOVA IDEIA
-            </button>
+            <div className="idea-world-actions">
+
+              {selectedNodeId && (
+
+                <button
+                  className="delete-thought-button"
+                  onClick={() =>
+                    deleteThought(
+                      selectedNodeId
+                    )
+                  }
+                  disabled={
+                    deletingNodeId ===
+                    selectedNodeId
+                  }
+                >
+                  {deletingNodeId ===
+                  selectedNodeId
+                    ? 'APAGANDO...'
+                    : '🗑 APAGAR IDEIA'}
+                </button>
+
+              )}
+
+              <button
+                className="create-thought-button active"
+                onClick={() => {
+                  setMessage('')
+                  setSuccessMessage('')
+                  setShowCreateThought(true)
+                }}
+              >
+                + NOVA IDEIA
+              </button>
+
+              <button
+                className="delete-world-button"
+                onClick={() =>
+                  deleteBoard(
+                    selectedBoard
+                  )
+                }
+                disabled={
+                  deletingBoardId ===
+                  selectedBoard.id
+                }
+              >
+                {deletingBoardId ===
+                selectedBoard.id
+                  ? 'APAGANDO...'
+                  : '🗑 APAGAR UNIVERSO'}
+              </button>
+
+            </div>
 
           </header>
 
@@ -862,6 +1161,21 @@ function Ideas() {
 
                 onConnect={
                   onConnect
+                }
+
+                onNodeClick={(
+                  _event,
+                  node
+                ) => {
+                  setSelectedNodeId(
+                    node.id
+                  )
+                }}
+
+                onPaneClick={() =>
+                  setSelectedNodeId(
+                    null
+                  )
                 }
 
                 onNodeDragStop={(
@@ -1209,17 +1523,60 @@ function Ideas() {
             {boards.map(
               (board) => (
 
-                <button
+                <article
                   key={
                     board.id
                   }
-                  className="universe-card"
-                  onClick={() =>
-                    openBoard(
-                      board
-                    )
-                  }
+                  className="universe-card universe-card-clickable"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    if (
+                      deletingBoardId !==
+                      board.id
+                    ) {
+                      openBoard(
+                        board
+                      )
+                    }
+                  }}
+                  onKeyDown={(
+                    event
+                  ) => {
+                    if (
+                      event.key ===
+                        'Enter' ||
+                      event.key === ' '
+                    ) {
+                      openBoard(
+                        board
+                      )
+                    }
+                  }}
                 >
+
+                  <button
+                    className="delete-universe-card-button"
+                    title="Apagar universo"
+                    onClick={(
+                      event
+                    ) => {
+                      event.stopPropagation()
+
+                      deleteBoard(
+                        board
+                      )
+                    }}
+                    disabled={
+                      deletingBoardId ===
+                      board.id
+                    }
+                  >
+                    {deletingBoardId ===
+                    board.id
+                      ? '...'
+                      : '🗑'}
+                  </button>
 
                   <div className="universe-card-glow" />
 
@@ -1256,7 +1613,7 @@ function Ideas() {
 
                   </div>
 
-                </button>
+                </article>
 
               )
             )}
