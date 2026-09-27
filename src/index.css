@@ -3846,4 +3846,491 @@ button {
   .idea-modal {
     padding: 22px 18px;
   }
+}/* =========================================================
+   MAPA MENTAL / REACT FLOW
+========================================================= */
+
+.idea-world-container {
+  width: min(100% - 24px, 1400px);
+}
+
+.idea-flow-wrapper {
+  position: relative;
+
+  width: 100%;
+  height: 680px;
+
+  margin-top: 30px;
+
+  overflow: hidden;
+
+  border: 2px solid #54528c;
+  border-radius: 18px;
+
+  background:
+    radial-gradient(
+      circle at center,
+      #26245a 0%,
+      #151735 55%,
+      #0c0e25 100%
+    );
+
+  box-shadow:
+    inset 0 0 80px
+      rgba(144, 75, 255, .08),
+    0 16px 40px
+      rgba(0,0,0,.25);
+}
+
+
+/* FUNDO DO REACT FLOW */
+
+.idea-flow-wrapper
+.react-flow__background {
+  opacity: .35;
+}
+
+.idea-flow-wrapper
+.react-flow__pane {
+  cursor: grab;
+}
+
+.idea-flow-wrapper
+.react-flow__pane:active {
+  cursor: grabbing;
+}
+
+
+/* =========================================================
+   NUVEM / PENSAMENTO
+========================================================= */
+
+.thought-node {
+  position: relative;
+
+  width: 220px;
+  min-height: 140px;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+  align-items: center;
+
+  padding: 24px 20px;
+
+  text-align: center;
+
+  border:
+    2px solid #bd7cff;
+
+  border-radius:
+    44% 56% 51% 49% /
+    54% 44% 56% 46%;
+
+  color: white;
+
+  background:
+    radial-gradient(
+      circle at 35% 20%,
+      rgba(255,255,255,.16),
+      transparent 30%
+    ),
+    linear-gradient(
+      145deg,
+      #9149de,
+      #54238e 70%,
+      #3a1768
+    );
+
+  box-shadow:
+    inset 0 2px 0
+      rgba(255,255,255,.18),
+
+    inset 0 -5px 0
+      rgba(30,8,60,.24),
+
+    0 8px 0
+      #24103f,
+
+    0 0 35px
+      rgba(174,84,255,.22);
+
+  transition:
+    transform .15s ease,
+    filter .15s ease;
+}
+
+.thought-node:hover {
+  filter: brightness(1.08);
+}
+
+.react-flow__node.selected
+.thought-node {
+  border-color:
+    #81e8ff;
+
+  box-shadow:
+    inset 0 2px 0
+      rgba(255,255,255,.18),
+
+    0 8px 0
+      #24103f,
+
+    0 0 40px
+      rgba(86,213,255,.4);
+}
+
+.thought-node-symbol {
+  margin-bottom: 5px;
+
+  color: #efdcff;
+
+  font-size: 28px;
+
+  text-shadow:
+    0 0 18px
+      rgba(235,199,255,.45);
+}
+
+.thought-node strong {
+  max-width: 180px;
+
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.thought-node p {
+  max-width: 185px;
+
+  margin:
+    9px 0 0;
+
+  color: #dfcdf1;
+
+  font-size: 11px;
+  line-height: 1.4;
+
+  white-space: normal;
+}
+
+.thought-node-footer {
+  display: block;
+
+  margin-top: 13px;
+
+  color: #bd9bd7;
+
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 1.8px;
+}
+
+
+/* =========================================================
+   PONTOS DE CONEXÃO
+========================================================= */
+
+.thought-handle {
+  width: 13px !important;
+  height: 13px !important;
+
+  border:
+    2px solid white !important;
+
+  background:
+    #c060ff !important;
+
+  box-shadow:
+    0 0 13px
+      rgba(196,96,255,.9);
+}
+
+.thought-handle:hover {
+  transform:
+    scale(1.3);
+}
+
+
+/* =========================================================
+   LINHAS
+========================================================= */
+
+.idea-flow-wrapper
+.react-flow__edge-path {
+  stroke:
+    #bc76ff;
+
+  stroke-width:
+    2.5;
+
+  filter:
+    drop-shadow(
+      0 0 4px
+      rgba(187,111,255,.7)
+    );
+}
+
+.idea-flow-wrapper
+.react-flow__edge.selected
+.react-flow__edge-path {
+  stroke:
+    #69ddff;
+}
+
+
+/* =========================================================
+   CONTROLES
+========================================================= */
+
+.idea-flow-wrapper
+.react-flow__controls {
+  overflow: hidden;
+
+  border:
+    1px solid #5f5b92;
+
+  border-radius: 10px;
+
+  box-shadow:
+    0 8px 20px
+      rgba(0,0,0,.3);
+}
+
+.idea-flow-wrapper
+.react-flow__controls-button {
+  border-bottom:
+    1px solid #4e4b7d;
+
+  color: white;
+
+  background:
+    #252750;
+}
+
+.idea-flow-wrapper
+.react-flow__controls-button:hover {
+  background:
+    #38336c;
+}
+
+.idea-flow-wrapper
+.react-flow__controls-button svg {
+  fill:
+    #ffffff;
+}
+
+
+/* =========================================================
+   MINI MAPA
+========================================================= */
+
+.idea-flow-wrapper
+.react-flow__minimap {
+  overflow: hidden;
+
+  border:
+    1px solid #5a578e;
+
+  border-radius: 10px;
+
+  background:
+    #11142f;
+}
+
+
+/* =========================================================
+   UNIVERSO VAZIO
+========================================================= */
+
+.empty-world-message {
+  position: absolute;
+
+  z-index: 10;
+
+  left: 50%;
+  top: 50%;
+
+  transform:
+    translate(-50%, -50%);
+
+  width:
+    min(90%, 360px);
+
+  padding: 30px;
+
+  pointer-events: none;
+
+  color: white;
+
+  text-align: center;
+
+  border:
+    1px solid
+    rgba(156,111,220,.4);
+
+  border-radius: 15px;
+
+  background:
+    rgba(19,20,48,.76);
+
+  backdrop-filter:
+    blur(8px);
+}
+
+.empty-world-message > div {
+  color: #c77cff;
+
+  font-size: 42px;
+
+  text-shadow:
+    0 0 20px
+      rgba(199,124,255,.6);
+}
+
+.empty-world-message h2 {
+  margin:
+    7px 0 5px;
+}
+
+.empty-world-message p {
+  margin: 0;
+
+  color: #949ac0;
+}
+
+.empty-world-message button {
+  margin-top: 17px;
+
+  padding:
+    11px 18px;
+
+  pointer-events: auto;
+
+  border:
+    1px solid #c47fff;
+
+  border-radius: 8px;
+
+  color: white;
+
+  font-weight: 900;
+
+  background:
+    linear-gradient(
+      #a950e1,
+      #6826aa
+    );
+}
+
+
+/* =========================================================
+   CARREGANDO UNIVERSO
+========================================================= */
+
+.idea-world-loading {
+  height: 100%;
+
+  display: grid;
+
+  place-items: center;
+
+  color: #aaa4ca;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   TEXTAREA NOVA IDEIA
+========================================================= */
+
+.idea-form textarea {
+  width: 100%;
+
+  padding: 14px;
+
+  border:
+    2px solid #595585;
+
+  border-radius: 9px;
+
+  outline: none;
+
+  resize: vertical;
+
+  color: white;
+
+  background: #11132e;
+
+  font-family: inherit;
+}
+
+.idea-form textarea:focus {
+  border-color:
+    #b96aff;
+
+  box-shadow:
+    0 0 0 3px
+      rgba(185,106,255,.08);
+}
+
+
+/* BOTÃO NOVA IDEIA ATIVO */
+
+.create-thought-button.active {
+  cursor: pointer;
+  opacity: 1;
+}
+
+.create-thought-button.active:hover {
+  filter: brightness(1.1);
+
+  transform:
+    translateY(-2px);
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 650px) {
+
+  .idea-flow-wrapper {
+    height:
+      calc(100vh - 260px);
+
+    min-height:
+      520px;
+
+    margin-top:
+      20px;
+  }
+
+  .thought-node {
+    width:
+      190px;
+
+    min-height:
+      125px;
+
+    padding:
+      20px 17px;
+  }
+
+  .thought-node strong {
+    font-size:
+      14px;
+  }
+
+  .idea-flow-wrapper
+  .react-flow__minimap {
+    width:
+      110px;
+
+    height:
+      80px;
+  }
+
 }

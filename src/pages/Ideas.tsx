@@ -1,6 +1,29 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  Handle,
+  Position,
+  addEdge,
+  useEdgesState,
+  useNodesState,
+  type Connection,
+  type Edge,
+  type Node,
+  type NodeProps,
+} from '@xyflow/react'
+
+import '@xyflow/react/dist/style.css'
+
 import { supabase } from '../lib/supabase'
+
+/* =========================================================
+   TIPOS
+========================================================= */
 
 type IdeaBoard = {
   id: string
@@ -10,14 +33,101 @@ type IdeaBoard = {
   updated_at: string
 }
 
+type IdeaNodeDatabase = {
+  id: string
+  board_id: string
+  title: string
+  content: string | null
+  position_x: number
+  position_y: number
+  created_at: string
+  updated_at: string
+}
+
+type IdeaEdgeDatabase = {
+  id: string
+  board_id: string
+  source_node_id: string
+  target_node_id: string
+  created_at: string
+}
+
+type ThoughtNodeData = {
+  title: string
+  content: string | null
+}
+
+/* =========================================================
+   NUVEM PERSONALIZADA
+========================================================= */
+
+function ThoughtNode({
+  data,
+}: NodeProps<Node<ThoughtNodeData>>) {
+  return (
+    <div className="thought-node">
+
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="thought-handle"
+      />
+
+      <div className="thought-node-symbol">
+        ☁
+      </div>
+
+      <strong>
+        {data.title}
+      </strong>
+
+      {data.content && (
+        <p>
+          {data.content}
+        </p>
+      )}
+
+      <span className="thought-node-footer">
+        PENSAMENTO
+      </span>
+
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="thought-handle"
+      />
+
+    </div>
+  )
+}
+
+const nodeTypes = {
+  thought: ThoughtNode,
+}
+
+/* =========================================================
+   COMPONENTE
+========================================================= */
+
 function Ideas() {
   const navigate = useNavigate()
+
+  /* =======================================================
+     UNIVERSOS
+  ======================================================= */
 
   const [boards, setBoards] =
     useState<IdeaBoard[]>([])
 
+  const [selectedBoard, setSelectedBoard] =
+    useState<IdeaBoard | null>(null)
+
   const [loading, setLoading] =
     useState(true)
+
+  /* =======================================================
+     CRIAR UNIVERSO
+  ======================================================= */
 
   const [showCreateBoard, setShowCreateBoard] =
     useState(false)
@@ -25,8 +135,41 @@ function Ideas() {
   const [boardName, setBoardName] =
     useState('')
 
-  const [creating, setCreating] =
+  const [creatingBoard, setCreatingBoard] =
     useState(false)
+
+  /* =======================================================
+     MAPA
+  ======================================================= */
+
+  const [nodes, setNodes, onNodesChange] =
+    useNodesState<Node<ThoughtNodeData>>([])
+
+  const [edges, setEdges, onEdgesChange] =
+    useEdgesState<Edge>([])
+
+  const [loadingWorld, setLoadingWorld] =
+    useState(false)
+
+  /* =======================================================
+     NOVA IDEIA
+  ======================================================= */
+
+  const [showCreateThought, setShowCreateThought] =
+    useState(false)
+
+  const [thoughtTitle, setThoughtTitle] =
+    useState('')
+
+  const [thoughtContent, setThoughtContent] =
+    useState('')
+
+  const [creatingThought, setCreatingThought] =
+    useState(false)
+
+  /* =======================================================
+     MENSAGENS
+  ======================================================= */
 
   const [message, setMessage] =
     useState('')
@@ -34,12 +177,17 @@ function Ideas() {
   const [successMessage, setSuccessMessage] =
     useState('')
 
-  const [selectedBoard, setSelectedBoard] =
-    useState<IdeaBoard | null>(null)
+  /* =======================================================
+     INÍCIO
+  ======================================================= */
 
   useEffect(() => {
     loadBoards()
   }, [])
+
+  /* =======================================================
+     CARREGAR UNIVERSOS
+  ======================================================= */
 
   async function loadBoards() {
     setLoading(true)
@@ -89,6 +237,10 @@ function Ideas() {
     setLoading(false)
   }
 
+  /* =======================================================
+     CRIAR UNIVERSO
+  ======================================================= */
+
   async function createBoard() {
     setMessage('')
     setSuccessMessage('')
@@ -111,7 +263,7 @@ function Ideas() {
       return
     }
 
-    setCreating(true)
+    setCreatingBoard(true)
 
     const { data, error } = await supabase
       .from('idea_boards')
@@ -138,50 +290,494 @@ function Ideas() {
         'Não foi possível criar o universo.'
       )
 
-      setCreating(false)
+      setCreatingBoard(false)
       return
     }
 
     setBoardName('')
     setShowCreateBoard(false)
-    setCreating(false)
-
-    setSuccessMessage(
-      'Novo universo criado!'
-    )
+    setCreatingBoard(false)
 
     await loadBoards()
 
-    if (data) {
-      setSelectedBoard(
-        data as IdeaBoard
+    setSelectedBoard(
+      data as IdeaBoard
+    )
+
+    setSuccessMessage(
+      'Universo criado!'
+    )
+  }
+
+  /* =======================================================
+     ABRIR UNIVERSO
+  ======================================================= */
+
+  async function openBoard(
+    board: IdeaBoard
+  ) {
+    setSelectedBoard(board)
+
+    setMessage('')
+    setSuccessMessage('')
+
+    await loadWorld(
+      board.id
+    )
+  }
+
+  /* =======================================================
+     CARREGAR MAPA
+  ======================================================= */
+
+  async function loadWorld(
+    boardId: string
+  ) {
+    setLoadingWorld(true)
+
+    const [
+      nodeResult,
+      edgeResult,
+    ] = await Promise.all([
+      supabase
+        .from('idea_nodes')
+        .select(`
+          id,
+          board_id,
+          title,
+          content,
+          position_x,
+          position_y,
+          created_at,
+          updated_at
+        `)
+        .eq(
+          'board_id',
+          boardId
+        ),
+
+      supabase
+        .from('idea_edges')
+        .select(`
+          id,
+          board_id,
+          source_node_id,
+          target_node_id,
+          created_at
+        `)
+        .eq(
+          'board_id',
+          boardId
+        ),
+    ])
+
+    if (nodeResult.error) {
+      console.error(
+        'Erro ao carregar ideias:',
+        nodeResult.error
+      )
+
+      setMessage(
+        'Não foi possível carregar as ideias.'
+      )
+
+      setLoadingWorld(false)
+      return
+    }
+
+    if (edgeResult.error) {
+      console.error(
+        'Erro ao carregar conexões:',
+        edgeResult.error
+      )
+
+      setMessage(
+        'Não foi possível carregar as conexões.'
+      )
+
+      setLoadingWorld(false)
+      return
+    }
+
+    const databaseNodes =
+      (nodeResult.data ??
+        []) as IdeaNodeDatabase[]
+
+    const databaseEdges =
+      (edgeResult.data ??
+        []) as IdeaEdgeDatabase[]
+
+    const flowNodes:
+      Node<ThoughtNodeData>[] =
+      databaseNodes.map(
+        (item) => ({
+          id: item.id,
+
+          type: 'thought',
+
+          position: {
+            x:
+              Number(
+                item.position_x
+              ) || 0,
+
+            y:
+              Number(
+                item.position_y
+              ) || 0,
+          },
+
+          data: {
+            title:
+              item.title,
+
+            content:
+              item.content,
+          },
+        })
+      )
+
+    const flowEdges:
+      Edge[] =
+      databaseEdges.map(
+        (item) => ({
+          id:
+            item.id,
+
+          source:
+            item.source_node_id,
+
+          target:
+            item.target_node_id,
+
+          type:
+            'smoothstep',
+
+          animated:
+            true,
+        })
+      )
+
+    setNodes(flowNodes)
+    setEdges(flowEdges)
+
+    setLoadingWorld(false)
+  }
+
+  /* =======================================================
+     CRIAR IDEIA
+  ======================================================= */
+
+  async function createThought() {
+    if (!selectedBoard) {
+      return
+    }
+
+    setMessage('')
+    setSuccessMessage('')
+
+    if (!thoughtTitle.trim()) {
+      setMessage(
+        'Dê um título para a ideia.'
+      )
+      return
+    }
+
+    setCreatingThought(true)
+
+    const ideaNumber =
+      nodes.length
+
+    const x =
+      (ideaNumber % 4) *
+        260 -
+      300
+
+    const y =
+      Math.floor(
+        ideaNumber / 4
+      ) *
+        190 -
+      150
+
+    const { data, error } =
+      await supabase
+        .from('idea_nodes')
+        .insert({
+          board_id:
+            selectedBoard.id,
+
+          title:
+            thoughtTitle.trim(),
+
+          content:
+            thoughtContent.trim() ||
+            null,
+
+          position_x:
+            x,
+
+          position_y:
+            y,
+        })
+        .select(`
+          id,
+          board_id,
+          title,
+          content,
+          position_x,
+          position_y,
+          created_at,
+          updated_at
+        `)
+        .single()
+
+    if (error) {
+      console.error(
+        'Erro ao criar ideia:',
+        error
+      )
+
+      setMessage(
+        'Não foi possível criar a ideia.'
+      )
+
+      setCreatingThought(false)
+      return
+    }
+
+    const newIdea =
+      data as IdeaNodeDatabase
+
+    const newNode:
+      Node<ThoughtNodeData> = {
+      id:
+        newIdea.id,
+
+      type:
+        'thought',
+
+      position: {
+        x:
+          Number(
+            newIdea.position_x
+          ),
+
+        y:
+          Number(
+            newIdea.position_y
+          ),
+      },
+
+      data: {
+        title:
+          newIdea.title,
+
+        content:
+          newIdea.content,
+      },
+    }
+
+    setNodes(
+      (currentNodes) => [
+        ...currentNodes,
+        newNode,
+      ]
+    )
+
+    setThoughtTitle('')
+    setThoughtContent('')
+
+    setShowCreateThought(false)
+    setCreatingThought(false)
+
+    setSuccessMessage(
+      'Nova ideia criada!'
+    )
+  }
+
+  /* =======================================================
+     SALVAR POSIÇÃO
+  ======================================================= */
+
+  async function saveNodePosition(
+    node: Node
+  ) {
+    const { error } =
+      await supabase
+        .from('idea_nodes')
+        .update({
+          position_x:
+            node.position.x,
+
+          position_y:
+            node.position.y,
+        })
+        .eq(
+          'id',
+          node.id
+        )
+
+    if (error) {
+      console.error(
+        'Erro ao salvar posição:',
+        error
       )
     }
   }
 
-  function formatDate(date: string) {
+  /* =======================================================
+     CRIAR CONEXÃO
+  ======================================================= */
+
+  const onConnect =
+    useCallback(
+      async (
+        connection:
+          Connection
+      ) => {
+        if (
+          !selectedBoard ||
+          !connection.source ||
+          !connection.target
+        ) {
+          return
+        }
+
+        if (
+          connection.source ===
+          connection.target
+        ) {
+          return
+        }
+
+        const alreadyExists =
+          edges.some(
+            (edge) =>
+              edge.source ===
+                connection.source &&
+              edge.target ===
+                connection.target
+          )
+
+        if (alreadyExists) {
+          return
+        }
+
+        const {
+          data,
+          error,
+        } = await supabase
+          .from('idea_edges')
+          .insert({
+            board_id:
+              selectedBoard.id,
+
+            source_node_id:
+              connection.source,
+
+            target_node_id:
+              connection.target,
+          })
+          .select(`
+            id,
+            board_id,
+            source_node_id,
+            target_node_id,
+            created_at
+          `)
+          .single()
+
+        if (error) {
+          console.error(
+            'Erro ao criar conexão:',
+            error
+          )
+
+          setMessage(
+            'Não foi possível conectar as ideias.'
+          )
+
+          return
+        }
+
+        const newEdgeData =
+          data as IdeaEdgeDatabase
+
+        const newEdge: Edge = {
+          id:
+            newEdgeData.id,
+
+          source:
+            newEdgeData.source_node_id,
+
+          target:
+            newEdgeData.target_node_id,
+
+          type:
+            'smoothstep',
+
+          animated:
+            true,
+        }
+
+        setEdges(
+          (currentEdges) =>
+            addEdge(
+              newEdge,
+              currentEdges
+            )
+        )
+      },
+      [
+        selectedBoard,
+        edges,
+        setEdges,
+      ]
+    )
+
+  /* =======================================================
+     DATA
+  ======================================================= */
+
+  function formatDate(
+    date: string
+  ) {
     return new Date(date)
       .toLocaleDateString(
         'pt-BR',
         {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
+          day:
+            '2-digit',
+
+          month:
+            '2-digit',
+
+          year:
+            'numeric',
         }
       )
   }
 
-  /* =========================================
+  /* =======================================================
+     NÚMERO DE IDEIAS
+  ======================================================= */
+
+  const thoughtCount =
+    useMemo(
+      () => nodes.length,
+      [nodes]
+    )
+
+  /* =======================================================
      UNIVERSO ABERTO
-     Por enquanto é somente a estrutura.
-     O mapa visual entra na próxima etapa.
-  ========================================= */
+  ======================================================= */
 
   if (selectedBoard) {
     return (
       <main className="ideas-page">
 
-        <div className="ideas-container">
+        <div className="ideas-container idea-world-container">
 
           <header className="idea-world-header">
 
@@ -189,9 +785,13 @@ function Ideas() {
 
               <button
                 className="ideas-back-button"
-                onClick={() =>
+                onClick={() => {
                   setSelectedBoard(null)
-                }
+                  setNodes([])
+                  setEdges([])
+                  setMessage('')
+                  setSuccessMessage('')
+                }}
               >
                 ← MEUS UNIVERSOS
               </button>
@@ -205,71 +805,284 @@ function Ideas() {
               </h1>
 
               <p>
-                Este será o espaço onde
-                suas ideias ganharão forma.
+                {thoughtCount}{' '}
+                {thoughtCount === 1
+                  ? 'pensamento registrado'
+                  : 'pensamentos registrados'}
               </p>
 
             </div>
 
             <button
-              className="create-thought-button"
-              disabled
+              className="create-thought-button active"
+              onClick={() => {
+                setMessage('')
+                setSuccessMessage('')
+                setShowCreateThought(true)
+              }}
             >
               + NOVA IDEIA
             </button>
 
           </header>
 
-          <section className="idea-world-placeholder">
-
-            <div className="idea-orbit orbit-one" />
-            <div className="idea-orbit orbit-two" />
-
-            <div className="central-thought">
-
-              <span>
-                ☁
-              </span>
-
-              <strong>
-                {selectedBoard.name}
-              </strong>
-
-              <small>
-                Universo criado
-              </small>
-
+          {message && (
+            <div className="idea-error-message">
+              {message}
             </div>
+          )}
 
-            <div className="idea-placeholder-message">
-
-              <span>
-                ✦
-              </span>
-
-              <h2>
-                Universo pronto
-              </h2>
-
-              <p>
-                Na próxima etapa,
-                colocaremos aqui as nuvens
-                arrastáveis, zoom e conexões.
-              </p>
-
+          {successMessage && (
+            <div className="idea-success-message">
+              ✓ {successMessage}
             </div>
+          )}
+
+          <section className="idea-flow-wrapper">
+
+            {loadingWorld ? (
+
+              <div className="idea-world-loading">
+                Abrindo universo...
+              </div>
+
+            ) : (
+
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+
+                onNodesChange={
+                  onNodesChange
+                }
+
+                onEdgesChange={
+                  onEdgesChange
+                }
+
+                onConnect={
+                  onConnect
+                }
+
+                onNodeDragStop={(
+                  _event,
+                  node
+                ) =>
+                  saveNodePosition(
+                    node
+                  )
+                }
+
+                nodeTypes={
+                  nodeTypes
+                }
+
+                fitView
+
+                fitViewOptions={{
+                  padding: 0.4,
+                }}
+
+                minZoom={0.2}
+                maxZoom={2.5}
+
+                defaultEdgeOptions={{
+                  type:
+                    'smoothstep',
+
+                  animated:
+                    true,
+                }}
+              >
+
+                <Background
+                  gap={28}
+                  size={1}
+                />
+
+                <Controls />
+
+                <MiniMap
+                  zoomable
+                  pannable
+                />
+
+              </ReactFlow>
+
+            )}
+
+            {!loadingWorld &&
+              nodes.length === 0 && (
+
+                <div className="empty-world-message">
+
+                  <div>
+                    ✦
+                  </div>
+
+                  <h2>
+                    Universo vazio
+                  </h2>
+
+                  <p>
+                    Crie seu primeiro
+                    pensamento.
+                  </p>
+
+                  <button
+                    onClick={() =>
+                      setShowCreateThought(
+                        true
+                      )
+                    }
+                  >
+                    + CRIAR IDEIA
+                  </button>
+
+                </div>
+
+              )}
 
           </section>
 
         </div>
 
+        {/* =====================================
+            MODAL NOVA IDEIA
+        ===================================== */}
+
+        {showCreateThought && (
+
+          <div
+            className="idea-modal-overlay"
+            onMouseDown={() =>
+              setShowCreateThought(
+                false
+              )
+            }
+          >
+
+            <section
+              className="idea-modal"
+              onMouseDown={(
+                event
+              ) =>
+                event.stopPropagation()
+              }
+            >
+
+              <div className="idea-modal-header">
+
+                <div>
+
+                  <span>
+                    NOVO PENSAMENTO
+                  </span>
+
+                  <h2>
+                    NOVA IDEIA
+                  </h2>
+
+                </div>
+
+                <button
+                  onClick={() =>
+                    setShowCreateThought(
+                      false
+                    )
+                  }
+                >
+                  ✕
+                </button>
+
+              </div>
+
+              <div className="idea-form">
+
+                <label>
+                  Título
+                </label>
+
+                <input
+                  type="text"
+                  maxLength={70}
+                  autoFocus
+                  placeholder="Ex: Nova coleção de camisetas"
+                  value={
+                    thoughtTitle
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setThoughtTitle(
+                      event.target.value
+                    )
+                  }
+                />
+
+                <label>
+                  Anotação
+                </label>
+
+                <textarea
+                  rows={5}
+                  maxLength={500}
+                  placeholder="Escreva sua ideia..."
+                  value={
+                    thoughtContent
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setThoughtContent(
+                      event.target.value
+                    )
+                  }
+                />
+
+                <small>
+                  {
+                    thoughtContent
+                      .length
+                  }
+                  /500
+                </small>
+
+                {message && (
+                  <div className="idea-form-message">
+                    {message}
+                  </div>
+                )}
+
+                <button
+                  className="confirm-create-universe"
+                  onClick={
+                    createThought
+                  }
+                  disabled={
+                    creatingThought
+                  }
+                >
+                  {creatingThought
+                    ? 'CRIANDO IDEIA...'
+                    : 'CRIAR IDEIA'}
+                </button>
+
+              </div>
+
+            </section>
+
+          </div>
+
+        )}
+
       </main>
     )
   }
 
-  /* =========================================
+  /* =======================================================
      LISTA DE UNIVERSOS
-  ========================================= */
+  ======================================================= */
 
   return (
     <main className="ideas-page">
@@ -298,9 +1111,9 @@ function Ideas() {
             </h1>
 
             <p>
-              Crie universos, conecte
-              pensamentos e desenvolva
-              suas ideias.
+              Crie universos,
+              conecte pensamentos
+              e desenvolva suas ideias.
             </p>
 
           </div>
@@ -321,6 +1134,7 @@ function Ideas() {
         <section className="idea-summary">
 
           <div>
+
             <span>
               SEUS UNIVERSOS
             </span>
@@ -328,11 +1142,15 @@ function Ideas() {
             <strong>
               {boards.length}
             </strong>
+
           </div>
 
           <div className="idea-system-status">
+
             <span className="idea-status-light" />
+
             MEMÓRIA ATIVA
+
           </div>
 
         </section>
@@ -374,7 +1192,9 @@ function Ideas() {
 
             <button
               onClick={() =>
-                setShowCreateBoard(true)
+                setShowCreateBoard(
+                  true
+                )
               }
             >
               CRIAR PRIMEIRO UNIVERSO
@@ -386,55 +1206,60 @@ function Ideas() {
 
           <section className="universe-grid">
 
-            {boards.map((board) => (
+            {boards.map(
+              (board) => (
 
-              <button
-                key={board.id}
-                className="universe-card"
-                onClick={() =>
-                  setSelectedBoard(board)
-                }
-              >
+                <button
+                  key={
+                    board.id
+                  }
+                  className="universe-card"
+                  onClick={() =>
+                    openBoard(
+                      board
+                    )
+                  }
+                >
 
-                <div className="universe-card-glow" />
+                  <div className="universe-card-glow" />
 
-                <div className="universe-icon">
-                  ✦
-                </div>
+                  <div className="universe-icon">
+                    ✦
+                  </div>
 
-                <span className="universe-type">
-                  UNIVERSO
-                </span>
-
-                <h2>
-                  {board.name}
-                </h2>
-
-                <p>
-                  Entre neste espaço
-                  para explorar seus
-                  pensamentos.
-                </p>
-
-                <div className="universe-footer">
-
-                  <span>
-                    Criado em
-                    {' '}
-                    {formatDate(
-                      board.created_at
-                    )}
+                  <span className="universe-type">
+                    UNIVERSO
                   </span>
 
-                  <strong>
-                    ENTRAR ›
-                  </strong>
+                  <h2>
+                    {board.name}
+                  </h2>
 
-                </div>
+                  <p>
+                    Entre neste espaço
+                    para explorar seus
+                    pensamentos.
+                  </p>
 
-              </button>
+                  <div className="universe-footer">
 
-            ))}
+                    <span>
+                      Criado em{' '}
+                      {formatDate(
+                        board.created_at
+                      )}
+                    </span>
+
+                    <strong>
+                      ENTRAR ›
+                    </strong>
+
+                  </div>
+
+                </button>
+
+              )
+            )}
 
           </section>
 
@@ -443,7 +1268,7 @@ function Ideas() {
       </div>
 
       {/* =====================================
-          MODAL CRIAR UNIVERSO
+          MODAL NOVO UNIVERSO
       ===================================== */}
 
       {showCreateBoard && (
@@ -451,13 +1276,17 @@ function Ideas() {
         <div
           className="idea-modal-overlay"
           onMouseDown={() =>
-            setShowCreateBoard(false)
+            setShowCreateBoard(
+              false
+            )
           }
         >
 
           <section
             className="idea-modal"
-            onMouseDown={(event) =>
+            onMouseDown={(
+              event
+            ) =>
               event.stopPropagation()
             }
           >
@@ -478,7 +1307,9 @@ function Ideas() {
 
               <button
                 onClick={() =>
-                  setShowCreateBoard(false)
+                  setShowCreateBoard(
+                    false
+                  )
                 }
               >
                 ✕
@@ -498,14 +1329,19 @@ function Ideas() {
                 autoFocus
                 placeholder="Ex: Marketing, Produtos, Projetos..."
                 value={boardName}
-                onChange={(event) =>
+                onChange={(
+                  event
+                ) =>
                   setBoardName(
                     event.target.value
                   )
                 }
-                onKeyDown={(event) => {
+                onKeyDown={(
+                  event
+                ) => {
                   if (
-                    event.key === 'Enter'
+                    event.key ===
+                    'Enter'
                   ) {
                     createBoard()
                   }
@@ -513,7 +1349,10 @@ function Ideas() {
               />
 
               <small>
-                {boardName.length}/60
+                {
+                  boardName.length
+                }
+                /60
               </small>
 
               {message && (
@@ -524,10 +1363,14 @@ function Ideas() {
 
               <button
                 className="confirm-create-universe"
-                onClick={createBoard}
-                disabled={creating}
+                onClick={
+                  createBoard
+                }
+                disabled={
+                  creatingBoard
+                }
               >
-                {creating
+                {creatingBoard
                   ? 'CRIANDO UNIVERSO...'
                   : 'CRIAR UNIVERSO'}
               </button>
