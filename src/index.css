@@ -6946,3 +6946,919 @@ button {
   }
 
 }
+/* =========================================================
+   MISSÕES - PARTY
+========================================================= */
+
+.mission-tabs-four {
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+}
+
+
+/* =========================================================
+   PARTICIPAÇÃO PESSOAL
+========================================================= */
+
+.mission-personal-share {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-top: 15px;
+
+  padding: 12px;
+
+  border: 1px solid #596493;
+
+  border-radius: 9px;
+
+  background:
+    rgba(13, 17, 43, .55);
+}
+
+.mission-personal-share > div:first-child {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.mission-personal-share
+> div:first-child
+span {
+  color: #7581aa;
+
+  font-size: 8px;
+
+  font-weight: 900;
+
+  letter-spacing: 1.3px;
+}
+
+.mission-personal-share
+> div:first-child
+strong {
+  margin-top: 3px;
+
+  color: white;
+
+  font-size: 20px;
+}
+
+.personal-share-rewards {
+  display: flex;
+
+  gap: 13px;
+
+  font-size: 12px;
+
+  font-weight: 900;
+}
+
+.personal-share-rewards
+span:first-child {
+  color: #ffd55f;
+}
+
+.personal-share-rewards
+span:last-child {
+  color: #69e3ff;
+}
+
+
+/* =========================================================
+   PARTY BUTTON
+========================================================= */
+
+.party-details-button {
+  width: 100%;
+
+  margin-top: 17px;
+
+  padding: 11px;
+
+  border: 1px solid #6c61aa;
+
+  border-radius: 9px;
+
+  color: #d5c2ff;
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+  letter-spacing: 1px;
+
+  background:
+    linear-gradient(
+      #38315f,
+      #262248
+    );
+}
+
+.party-details-button:hover {
+  border-color: #ad7cff;
+
+  color: white;
+
+  filter: brightness(1.1);
+}
+
+
+/* =========================================================
+   MINHA PARTE CONCLUÍDA
+========================================================= */
+
+.my-part-completed {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  margin-top: 13px;
+
+  padding: 12px;
+
+  border: 1px solid #3bab67;
+
+  border-radius: 9px;
+
+  color: #72efa0;
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+  letter-spacing: .8px;
+
+  background:
+    rgba(38, 154, 80, .12);
+}
+
+.my-part-completed small {
+  margin-top: 5px;
+
+  color: #759a83;
+
+  font-size: 8px;
+}
+
+
+/* =========================================================
+   CONVITES
+========================================================= */
+
+.mission-invites-section {
+  margin-top: 25px;
+}
+
+.mission-invite-list {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+.mission-invite-card {
+  padding: 22px;
+
+  border: 2px solid #7056a1;
+
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #302a59,
+      #181b3e
+    );
+
+  box-shadow:
+    inset 0 2px 0
+      rgba(255,255,255,.08),
+    0 8px 0 #090a1d,
+    0 17px 30px
+      rgba(0,0,0,.22);
+}
+
+.invite-leader {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+.invite-leader-avatar {
+  display: grid;
+
+  place-items: center;
+
+  width: 55px;
+  height: 55px;
+
+  overflow: hidden;
+
+  border: 2px solid #bb7cff;
+
+  border-radius: 12px;
+
+  background: #22254c;
+}
+
+.invite-leader-avatar img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.invite-leader > div:last-child {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.invite-leader span {
+  color: #b078e1;
+
+  font-size: 8px;
+
+  font-weight: 900;
+
+  letter-spacing: 1.5px;
+}
+
+.invite-leader strong {
+  margin-top: 3px;
+}
+
+.invite-leader small {
+  margin-top: 2px;
+
+  color: #8986ad;
+}
+
+.mission-invite-card h2 {
+  margin:
+    23px 0 7px;
+}
+
+.mission-invite-card > p {
+  min-height: 42px;
+
+  color: #a1a7ca;
+
+  line-height: 1.5;
+}
+
+
+/* SHARE */
+
+.invite-share {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+  gap: 8px;
+
+  margin-top: 20px;
+}
+
+.invite-share > div {
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  padding: 10px;
+
+  border: 1px solid #565483;
+
+  border-radius: 8px;
+
+  text-align: center;
+
+  background:
+    rgba(11, 14, 36, .6);
+}
+
+.invite-share span {
+  color: #8e8bae;
+
+  font-size: 8px;
+}
+
+.invite-share strong {
+  margin-top: 4px;
+
+  font-size: 15px;
+}
+
+
+/* ACTIONS */
+
+.mission-invite-actions {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 9px;
+
+  margin-top: 18px;
+}
+
+.accept-party-invite,
+.decline-party-invite {
+  padding: 11px;
+
+  border-radius: 8px;
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing: .7px;
+}
+
+.accept-party-invite {
+  border: 1px solid #5bd888;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      #40cd6d,
+      #218b45
+    );
+}
+
+.decline-party-invite {
+  border: 1px solid #d05267;
+
+  color: #ffc1cb;
+
+  background:
+    rgba(145, 37, 58, .3);
+}
+
+
+/* =========================================================
+   PARTY MODAL
+========================================================= */
+
+.party-modal {
+  width: min(100%, 760px);
+
+  max-height:
+    calc(100vh - 40px);
+
+  overflow-y: auto;
+
+  padding: 28px;
+
+  border: 2px solid #6c62a0;
+
+  border-radius: 17px;
+
+  background:
+    linear-gradient(
+      150deg,
+      #302d5d,
+      #17193b
+    );
+
+  box-shadow:
+    inset 0 2px 0
+      rgba(255,255,255,.12),
+    0 25px 70px
+      rgba(0,0,0,.5);
+}
+
+.party-section-label {
+  display: block;
+
+  margin-bottom: 11px;
+
+  color: #a37bd1;
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing: 2px;
+}
+
+.party-current-section {
+  margin-top: 28px;
+}
+
+.party-members-list {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.party-member-row {
+  display: grid;
+
+  grid-template-columns:
+    auto 1fr auto auto;
+
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 11px;
+
+  border: 1px solid #4d527f;
+
+  border-radius: 10px;
+
+  background:
+    rgba(15, 17, 43, .55);
+}
+
+.party-member-avatar {
+  display: grid;
+
+  place-items: center;
+
+  width: 45px;
+  height: 45px;
+
+  overflow: hidden;
+
+  border: 1px solid #735da6;
+
+  border-radius: 10px;
+
+  background: #252549;
+}
+
+.party-member-avatar img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.party-member-name {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.party-member-name strong {
+  font-size: 12px;
+}
+
+.party-member-name span {
+  margin-top: 3px;
+
+  color: #7f84a9;
+
+  font-size: 9px;
+}
+
+.party-member-percent {
+  color: #e7c7ff;
+
+  font-weight: 900;
+}
+
+.party-member-status {
+  min-width: 95px;
+
+  padding: 7px;
+
+  border-radius: 7px;
+
+  text-align: center;
+
+  font-size: 8px;
+
+  font-weight: 900;
+}
+
+.status-accepted {
+  border: 1px solid #349b5d;
+
+  color: #66e995;
+
+  background:
+    rgba(43, 152, 85, .12);
+}
+
+.status-invited {
+  border: 1px solid #9e7c37;
+
+  color: #ffd471;
+
+  background:
+    rgba(164, 119, 32, .12);
+}
+
+.status-declined {
+  border: 1px solid #a84255;
+
+  color: #ff8fa0;
+
+  background:
+    rgba(157, 48, 69, .12);
+}
+
+
+/* =========================================================
+   DIVISOR
+========================================================= */
+
+.party-divider {
+  height: 1px;
+
+  margin:
+    25px 0;
+
+  background:
+    rgba(110, 104, 163, .35);
+}
+
+
+/* =========================================================
+   PORCENTAGEM LÍDER
+========================================================= */
+
+.party-percentage-row {
+  display: grid;
+
+  grid-template-columns:
+    1fr 110px auto;
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 13px;
+
+  border: 1px solid #5b5689;
+
+  border-radius: 10px;
+
+  background:
+    rgba(17, 18, 46, .5);
+}
+
+.party-percentage-row > div {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.party-percentage-row small {
+  margin-top: 3px;
+
+  color: #74789c;
+}
+
+.party-percentage-row input,
+.party-percentage-input input {
+  width: 100%;
+
+  padding: 9px;
+
+  border: 1px solid #655e95;
+
+  border-radius: 7px;
+
+  outline: none;
+
+  color: white;
+
+  text-align: center;
+
+  background: #11142e;
+}
+
+
+/* =========================================================
+   AMIGOS DA PARTY
+========================================================= */
+
+.party-friends-list {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+
+  margin-top: 11px;
+}
+
+.party-friend-select {
+  display: grid;
+
+  grid-template-columns:
+    auto auto 1fr auto;
+
+  align-items: center;
+
+  gap: 11px;
+
+  padding: 10px;
+
+  border: 1px solid #454c78;
+
+  border-radius: 10px;
+
+  background:
+    rgba(13, 16, 41, .45);
+}
+
+.party-friend-select.selected {
+  border-color: #8d63c5;
+
+  background:
+    rgba(89, 52, 130, .18);
+}
+
+.party-friend-toggle {
+  display: grid;
+
+  place-items: center;
+
+  width: 32px;
+  height: 32px;
+
+  border: 1px solid #75639e;
+
+  border-radius: 8px;
+
+  color: white;
+
+  font-weight: 900;
+
+  background: #292750;
+}
+
+.party-friend-select.selected
+.party-friend-toggle {
+  border-color: #63d88e;
+
+  background: #25864a;
+}
+
+.party-percentage-input {
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  width: 100px;
+}
+
+.party-no-friends {
+  padding: 25px;
+
+  border: 1px dashed #50557f;
+
+  border-radius: 10px;
+
+  color: #7f84a5;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   TOTAL
+========================================================= */
+
+.party-total {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-top: 18px;
+
+  padding: 14px;
+
+  border: 2px solid #6d557f;
+
+  border-radius: 10px;
+
+  background:
+    rgba(13, 16, 40, .6);
+}
+
+.party-total span {
+  color: #8c8fad;
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing: 1.5px;
+}
+
+.party-total strong {
+  font-size: 24px;
+}
+
+.party-total.valid {
+  border-color: #41ae69;
+
+  color: #68eca0;
+}
+
+.party-total.invalid {
+  border-color: #ae495c;
+
+  color: #ff8092;
+}
+
+
+/* =========================================================
+   PREVIEW RECOMPENSAS
+========================================================= */
+
+.party-reward-preview {
+  margin-top: 18px;
+
+  padding: 15px;
+
+  border: 1px solid #4e517d;
+
+  border-radius: 11px;
+
+  background:
+    rgba(11, 14, 36, .45);
+}
+
+.party-reward-preview h3 {
+  margin:
+    0 0 12px;
+
+  color: #8d82b3;
+
+  font-size: 9px;
+
+  letter-spacing: 1.5px;
+}
+
+.party-preview-row {
+  display: grid;
+
+  grid-template-columns:
+    1fr 70px 110px 110px;
+
+  gap: 8px;
+
+  padding:
+    8px 0;
+
+  border-bottom:
+    1px solid
+    rgba(92, 92, 136, .2);
+
+  font-size: 10px;
+}
+
+.party-preview-row:last-child {
+  border-bottom: 0;
+}
+
+.party-preview-row
+span:nth-child(3) {
+  color: #ffd55f;
+}
+
+.party-preview-row
+span:nth-child(4) {
+  color: #65ddff;
+}
+
+
+/* =========================================================
+   SALVAR PARTY
+========================================================= */
+
+.save-party-button {
+  width: 100%;
+
+  margin-top: 20px;
+
+  padding: 14px;
+
+  border: 2px solid #c578ff;
+
+  border-radius: 9px;
+
+  color: white;
+
+  font-weight: 900;
+
+  letter-spacing: 1px;
+
+  background:
+    linear-gradient(
+      #a54be6,
+      #6827ac
+    );
+
+  box-shadow:
+    0 5px 0 #3c1465;
+}
+
+.save-party-button:disabled {
+  opacity: .4;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   RESPONSIVO
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .mission-tabs-four {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .mission-invite-list {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@media (max-width: 650px) {
+
+  .mission-tabs-four {
+    grid-template-columns: 1fr;
+  }
+
+  .party-modal {
+    padding: 20px 14px;
+  }
+
+  .party-member-row {
+    grid-template-columns:
+      auto 1fr auto;
+  }
+
+  .party-member-status {
+    grid-column:
+      1 / -1;
+
+    width: 100%;
+  }
+
+  .party-friend-select {
+    grid-template-columns:
+      auto auto 1fr;
+  }
+
+  .party-percentage-input {
+    grid-column:
+      1 / -1;
+
+    width: 100%;
+  }
+
+  .party-percentage-row {
+    grid-template-columns:
+      1fr 90px auto;
+  }
+
+  .party-preview-row {
+    grid-template-columns:
+      1fr 60px;
+
+    gap: 5px;
+  }
+
+  .party-preview-row
+  span:nth-child(3),
+  .party-preview-row
+  span:nth-child(4) {
+    text-align: right;
+  }
+
+}
