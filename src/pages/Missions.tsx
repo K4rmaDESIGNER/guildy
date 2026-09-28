@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
+/* =========================================================
+   TIPOS
+========================================================= */
+
 type Priority =
   | 'low'
   | 'medium'
@@ -13,6 +17,21 @@ type MissionStatus =
   | 'claimed'
   | 'completed'
   | 'cancelled'
+
+type MemberStatus =
+  | 'invited'
+  | 'accepted'
+  | 'declined'
+
+type MemberRole =
+  | 'leader'
+  | 'member'
+
+type Tab =
+  | 'board'
+  | 'mine'
+  | 'invites'
+  | 'completed'
 
 type Mission = {
   id: string
@@ -32,8 +51,8 @@ type Mission = {
 type Membership = {
   mission_id: string
   user_id: string
-  role: 'leader' | 'member'
-  status: 'invited' | 'accepted' | 'declined'
+  role: MemberRole
+  status: MemberStatus
   reward_percentage: number | string
   completed: boolean
   completed_at: string | null
@@ -54,24 +73,24 @@ type MissionInvite = {
   created_at: string
 }
 
+type PartyMember = {
+  user_id: string
+  name: string
+  nickname: string | null
+  avatar_url: string | null
+  role: MemberRole
+  status: MemberStatus
+  reward_percentage: number | string
+  completed: boolean
+  completed_at: string | null
+}
+
 type Friend = {
   id: string
   name: string
   nickname: string | null
   avatar_url: string | null
   friends_since: string
-}
-
-type PartyMember = {
-  user_id: string
-  name: string
-  nickname: string | null
-  avatar_url: string | null
-  role: 'leader' | 'member'
-  status: 'invited' | 'accepted' | 'declined'
-  reward_percentage: number | string
-  completed: boolean
-  completed_at: string | null
 }
 
 type PartySelection = {
@@ -83,14 +102,16 @@ type PartySelection = {
   percentage: string
 }
 
-type Tab =
-  | 'board'
-  | 'mine'
-  | 'invites'
-  | 'completed'
+/* =========================================================
+   COMPONENTE
+========================================================= */
 
 function Missions() {
   const navigate = useNavigate()
+
+  /* =======================================================
+     DADOS PRINCIPAIS
+  ======================================================= */
 
   const [missions, setMissions] =
     useState<Mission[]>([])
@@ -110,9 +131,9 @@ function Missions() {
   const [activeTab, setActiveTab] =
     useState<Tab>('board')
 
-  /* =========================================================
+  /* =======================================================
      NOVA MISSÃO
-  ========================================================= */
+  ======================================================= */
 
   const [showCreateMission, setShowCreateMission] =
     useState(false)
@@ -135,9 +156,9 @@ function Missions() {
   const [creating, setCreating] =
     useState(false)
 
-  /* =========================================================
+  /* =======================================================
      AÇÕES
-  ========================================================= */
+  ======================================================= */
 
   const [acceptingMissionId, setAcceptingMissionId] =
     useState<string | null>(null)
@@ -151,9 +172,9 @@ function Missions() {
   const [respondingInviteId, setRespondingInviteId] =
     useState<string | null>(null)
 
-  /* =========================================================
+  /* =======================================================
      PARTY
-  ========================================================= */
+  ======================================================= */
 
   const [showPartyModal, setShowPartyModal] =
     useState(false)
@@ -176,9 +197,9 @@ function Missions() {
   const [savingParty, setSavingParty] =
     useState(false)
 
-  /* =========================================================
+  /* =======================================================
      MENSAGENS
-  ========================================================= */
+  ======================================================= */
 
   const [message, setMessage] =
     useState('')
@@ -186,17 +207,17 @@ function Missions() {
   const [successMessage, setSuccessMessage] =
     useState('')
 
-  /* =========================================================
+  /* =======================================================
      INÍCIO
-  ========================================================= */
+  ======================================================= */
 
   useEffect(() => {
     loadEverything()
   }, [])
 
-  /* =========================================================
+  /* =======================================================
      CARREGAR TUDO
-  ========================================================= */
+  ======================================================= */
 
   async function loadEverything() {
     setLoading(true)
@@ -234,9 +255,12 @@ function Missions() {
           completed_at
         `)
         .neq('status', 'cancelled')
-        .order('created_at', {
-          ascending: false,
-        }),
+        .order(
+          'created_at',
+          {
+            ascending: false,
+          }
+        ),
 
       supabase
         .from('mission_members')
@@ -270,7 +294,8 @@ function Missions() {
       )
     } else {
       setMissions(
-        (missionsResult.data as Mission[]) ?? []
+        (missionsResult.data as Mission[]) ??
+          []
       )
     }
 
@@ -281,7 +306,8 @@ function Missions() {
       )
     } else {
       setMemberships(
-        (membershipResult.data as Membership[]) ?? []
+        (membershipResult.data as Membership[]) ??
+          []
       )
     }
 
@@ -292,23 +318,25 @@ function Missions() {
       )
     } else {
       setInvites(
-        (inviteResult.data as MissionInvite[]) ?? []
+        (inviteResult.data as MissionInvite[]) ??
+          []
       )
     }
 
     setLoading(false)
   }
 
-  /* =========================================================
-     FILTROS
-  ========================================================= */
+  /* =======================================================
+     FILTROS DAS ABAS
+  ======================================================= */
 
   const boardMissions =
     useMemo(
       () =>
         missions.filter(
           (mission) =>
-            mission.status === 'available'
+            mission.status ===
+            'available'
         ),
       [missions]
     )
@@ -319,15 +347,18 @@ function Missions() {
         missions.filter(
           (mission) => {
             if (
-              mission.status !== 'claimed'
+              mission.status !==
+              'claimed'
             ) {
               return false
             }
 
             return memberships.some(
-              (member) =>
-                member.mission_id === mission.id &&
-                member.status === 'accepted'
+              (membership) =>
+                membership.mission_id ===
+                  mission.id &&
+                membership.status ===
+                  'accepted'
             )
           }
         ),
@@ -343,15 +374,18 @@ function Missions() {
         missions.filter(
           (mission) => {
             if (
-              mission.status !== 'completed'
+              mission.status !==
+              'completed'
             ) {
               return false
             }
 
             return memberships.some(
-              (member) =>
-                member.mission_id === mission.id &&
-                member.status === 'accepted'
+              (membership) =>
+                membership.mission_id ===
+                  mission.id &&
+                membership.status ===
+                  'accepted'
             )
           }
         ),
@@ -365,14 +399,15 @@ function Missions() {
     missionId: string
   ) {
     return memberships.find(
-      (member) =>
-        member.mission_id === missionId
+      (membership) =>
+        membership.mission_id ===
+        missionId
     )
   }
 
-  /* =========================================================
+  /* =======================================================
      CRIAR MISSÃO
-  ========================================================= */
+  ======================================================= */
 
   async function createMission() {
     setMessage('')
@@ -387,12 +422,18 @@ function Missions() {
 
     const gold =
       Number(
-        goldReward.replace(',', '.')
+        goldReward.replace(
+          ',',
+          '.'
+        )
       ) || 0
 
     const platinum =
       Number(
-        platinumReward.replace(',', '.')
+        platinumReward.replace(
+          ',',
+          '.'
+        )
       ) || 0
 
     if (
@@ -433,7 +474,8 @@ function Missions() {
             title.trim(),
 
           description:
-            description.trim() || null,
+            description.trim() ||
+            null,
 
           priority,
 
@@ -470,21 +512,21 @@ function Missions() {
     setGoldReward('')
     setPlatinumReward('')
 
-    setShowCreateMission(false)
     setCreating(false)
+    setShowCreateMission(false)
 
     setActiveTab('board')
 
     setSuccessMessage(
-      'Missão publicada!'
+      'Missão publicada no Quadro da Guilda!'
     )
 
     await loadEverything()
   }
 
-  /* =========================================================
+  /* =======================================================
      ACEITAR MISSÃO
-  ========================================================= */
+  ======================================================= */
 
   async function acceptMission(
     missionId: string
@@ -512,27 +554,33 @@ function Missions() {
       )
 
       setMessage(
-        'Não foi possível aceitar a missão.'
+        'Não foi possível aceitar a missão. Talvez outro membro já tenha aceitado.'
       )
 
-      setAcceptingMissionId(null)
+      setAcceptingMissionId(
+        null
+      )
+
+      await loadEverything()
       return
     }
 
-    setAcceptingMissionId(null)
+    setAcceptingMissionId(
+      null
+    )
 
     await loadEverything()
 
     setActiveTab('mine')
 
     setSuccessMessage(
-      'Missão adicionada às suas missões!'
+      'Missão adicionada ao seu quadro pessoal!'
     )
   }
 
-  /* =========================================================
-     CONVITE DE PARTY
-  ========================================================= */
+  /* =======================================================
+     RESPONDER CONVITE
+  ======================================================= */
 
   async function respondMissionInvite(
     invite: MissionInvite,
@@ -567,11 +615,16 @@ function Missions() {
         'Não foi possível responder ao convite.'
       )
 
-      setRespondingInviteId(null)
+      setRespondingInviteId(
+        null
+      )
+
       return
     }
 
-    setRespondingInviteId(null)
+    setRespondingInviteId(
+      null
+    )
 
     await loadEverything()
 
@@ -579,7 +632,7 @@ function Missions() {
       setActiveTab('mine')
 
       setSuccessMessage(
-        `Você entrou na party da missão "${invite.title}"!`
+        `Você entrou na Party da missão "${invite.title}"!`
       )
     } else {
       setSuccessMessage(
@@ -588,9 +641,9 @@ function Missions() {
     }
   }
 
-  /* =========================================================
+  /* =======================================================
      CONCLUIR MINHA PARTE
-  ========================================================= */
+  ======================================================= */
 
   async function completeMission(
     mission: Mission
@@ -626,7 +679,7 @@ function Missions() {
         )
       ) {
         setMessage(
-          'A party ainda possui convites aguardando resposta.'
+          'Ainda existem convites de Party aguardando resposta.'
         )
       } else if (
         lower.includes(
@@ -634,7 +687,7 @@ function Missions() {
         )
       ) {
         setMessage(
-          'Um membro recusou a party. O líder precisa reorganizar a divisão.'
+          'Um membro recusou o convite. O líder precisa reorganizar a Party.'
         )
       } else if (
         lower.includes(
@@ -642,7 +695,7 @@ function Missions() {
         )
       ) {
         setMessage(
-          'A divisão da party precisa totalizar 100%.'
+          'A divisão das recompensas precisa totalizar 100%.'
         )
       } else {
         setMessage(
@@ -650,11 +703,21 @@ function Missions() {
         )
       }
 
-      setCompletingMissionId(null)
+      setCompletingMissionId(
+        null
+      )
+
       return
     }
 
-    setCompletingMissionId(null)
+    setCompletingMissionId(
+      null
+    )
+
+    /*
+      Verifica se esta conclusão
+      também finalizou toda a missão.
+    */
 
     const {
       data: missionAfter,
@@ -678,33 +741,41 @@ function Missions() {
       )
 
       setSuccessMessage(
-        'Party completa! Missão concluída e recompensas distribuídas.'
+        'Party completa! A missão foi concluída e as recompensas foram distribuídas.'
       )
     } else {
       setActiveTab('mine')
 
       setSuccessMessage(
-        'Sua parte foi concluída. Agora aguardamos os outros membros da Party.'
+        'Sua parte foi concluída. Agora aguardamos os demais membros da Party.'
       )
     }
   }
 
-  /* =========================================================
+  /* =======================================================
      APAGAR MISSÃO
-  ========================================================= */
+  ======================================================= */
 
   async function deleteMission(
     mission: Mission
   ) {
     let warning =
-      `Apagar a missão "${mission.title}"?`
+      `Tem certeza que deseja apagar a missão "${mission.title}"?`
+
+    if (
+      mission.status ===
+      'claimed'
+    ) {
+      warning +=
+        '\n\nA Party e todos os convites desta missão também serão removidos.'
+    }
 
     if (
       mission.status ===
       'completed'
     ) {
       warning +=
-        '\n\nAs recompensas geradas por esta missão também serão removidas.'
+        '\n\nAs recompensas de Gold e Platinum geradas por esta missão também serão removidas.'
     }
 
     const confirmed =
@@ -719,6 +790,9 @@ function Missions() {
     setDeletingMissionId(
       mission.id
     )
+
+    setMessage('')
+    setSuccessMessage('')
 
     const { error } =
       await supabase.rpc(
@@ -739,11 +813,16 @@ function Missions() {
         'Não foi possível apagar a missão.'
       )
 
-      setDeletingMissionId(null)
+      setDeletingMissionId(
+        null
+      )
+
       return
     }
 
-    setDeletingMissionId(null)
+    setDeletingMissionId(
+      null
+    )
 
     setSuccessMessage(
       `Missão "${mission.title}" apagada.`
@@ -752,9 +831,9 @@ function Missions() {
     await loadEverything()
   }
 
-  /* =========================================================
+  /* =======================================================
      ABRIR PARTY
-  ========================================================= */
+  ======================================================= */
 
   async function openParty(
     mission: Mission
@@ -778,31 +857,40 @@ function Missions() {
       mission.claimed_by ===
       currentUserId
 
-    const partyResult =
-      await supabase.rpc(
-        'get_mission_party',
-        {
-          p_mission_id:
-            mission.id,
-        }
-      )
+    /*
+      Carrega a Party atual.
+    */
 
-    if (partyResult.error) {
+    const {
+      data: partyData,
+      error: partyError,
+    } = await supabase.rpc(
+      'get_mission_party',
+      {
+        p_mission_id:
+          mission.id,
+      }
+    )
+
+    if (partyError) {
       console.error(
-        'Erro ao carregar party:',
-        partyResult.error
+        'Erro ao carregar Party:',
+        partyError
       )
 
       setMessage(
         'Não foi possível carregar a Party.'
       )
 
-      setPartyLoading(false)
+      setPartyLoading(
+        false
+      )
+
       return
     }
 
     const currentParty =
-      (partyResult.data as PartyMember[]) ??
+      (partyData as PartyMember[]) ??
       []
 
     setPartyMembers(
@@ -826,6 +914,11 @@ function Missions() {
         : '100'
     )
 
+    /*
+      Se for líder, carrega os amigos
+      para permitir edição da Party.
+    */
+
     if (isLeader) {
       const {
         data: friendsData,
@@ -844,7 +937,10 @@ function Missions() {
           'Não foi possível carregar sua lista de amigos.'
         )
 
-        setPartyLoading(false)
+        setPartyLoading(
+          false
+        )
+
         return
       }
 
@@ -860,7 +956,9 @@ function Missions() {
               currentParty.find(
                 (member) =>
                   member.user_id ===
-                  friend.id
+                  friend.id &&
+                  member.role ===
+                  'member'
               )
 
             return {
@@ -902,12 +1000,14 @@ function Missions() {
       )
     }
 
-    setPartyLoading(false)
+    setPartyLoading(
+      false
+    )
   }
 
-  /* =========================================================
+  /* =======================================================
      SELECIONAR AMIGO
-  ========================================================= */
+  ======================================================= */
 
   function toggleFriend(
     userId: string
@@ -925,12 +1025,16 @@ function Missions() {
           userId
       )
 
+    if (!target) {
+      return
+    }
+
     if (
-      !target?.selected &&
+      !target.selected &&
       selectedCount >= 5
     ) {
       setMessage(
-        'Você pode convidar no máximo 5 amigos para a Party.'
+        'A Party permite no máximo 5 amigos além do líder.'
       )
 
       return
@@ -953,13 +1057,16 @@ function Missions() {
                   percentage:
                     friend.selected
                       ? ''
-                      : friend.percentage ||
-                        '',
+                      : friend.percentage,
                 }
               : friend
         )
     )
   }
+
+  /* =======================================================
+     PORCENTAGEM DO AMIGO
+  ======================================================= */
 
   function changeFriendPercentage(
     userId: string,
@@ -981,55 +1088,58 @@ function Missions() {
     )
   }
 
-  /* =========================================================
-     TOTAL DA PARTY
-  ========================================================= */
+  /* =======================================================
+     TOTAL DA DIVISÃO
+  ======================================================= */
 
   const partyTotal =
-    useMemo(() => {
-      const leader =
-        Number(
-          leaderPercentage
-        ) || 0
+    useMemo(
+      () => {
+        const leader =
+          Number(
+            leaderPercentage
+          ) || 0
 
-      const friends =
-        partySelections
-          .filter(
-            (friend) =>
-              friend.selected
-          )
-          .reduce(
-            (
-              total,
-              friend
-            ) =>
-              total +
+        const friends =
+          partySelections
+            .filter(
+              (friend) =>
+                friend.selected
+            )
+            .reduce(
               (
-                Number(
-                  friend.percentage
-                ) || 0
-              ),
-            0
-          )
+                total,
+                friend
+              ) =>
+                total +
+                (
+                  Number(
+                    friend.percentage
+                  ) || 0
+                ),
+              0
+            )
 
-      return (
-        Math.round(
-          (
-            leader +
-            friends
-          ) *
-            100
-        ) /
-        100
-      )
-    }, [
-      leaderPercentage,
-      partySelections,
-    ])
+        return (
+          Math.round(
+            (
+              leader +
+              friends
+            ) *
+              100
+          ) /
+          100
+        )
+      },
+      [
+        leaderPercentage,
+        partySelections,
+      ]
+    )
 
-  /* =========================================================
+  /* =======================================================
      SALVAR PARTY
-  ========================================================= */
+  ======================================================= */
 
   async function saveParty() {
     if (!partyMission) {
@@ -1048,11 +1158,13 @@ function Missions() {
       !Number.isFinite(
         leaderPct
       ) ||
-      leaderPct <= 0
+      leaderPct <= 0 ||
+      leaderPct > 100
     ) {
       setMessage(
         'Defina uma porcentagem válida para o líder.'
       )
+
       return
     }
 
@@ -1061,6 +1173,16 @@ function Missions() {
         (friend) =>
           friend.selected
       )
+
+    if (
+      selectedFriends.length > 5
+    ) {
+      setMessage(
+        'A Party permite no máximo 5 amigos.'
+      )
+
+      return
+    }
 
     for (
       const friend
@@ -1075,7 +1197,8 @@ function Missions() {
         !Number.isFinite(
           percentage
         ) ||
-        percentage <= 0
+        percentage <= 0 ||
+        percentage > 100
       ) {
         setMessage(
           `Defina uma porcentagem válida para ${friend.name}.`
@@ -1087,7 +1210,8 @@ function Missions() {
 
     if (
       Math.abs(
-        partyTotal - 100
+        partyTotal -
+        100
       ) > 0.001
     ) {
       setMessage(
@@ -1133,7 +1257,7 @@ function Missions() {
 
     if (error) {
       console.error(
-        'Erro ao salvar party:',
+        'Erro ao salvar Party:',
         error
       )
 
@@ -1158,15 +1282,18 @@ function Missions() {
     )
 
     setSuccessMessage(
-      'Party configurada! Os convites foram enviados.'
+      selectedFriends.length ===
+        0
+        ? 'Missão configurada como Solo!'
+        : 'Party configurada! Os convites foram enviados.'
     )
 
     await loadEverything()
   }
 
-  /* =========================================================
-     FORMATAÇÃO
-  ========================================================= */
+  /* =======================================================
+     PRIORIDADE
+  ======================================================= */
 
   function priorityLabel(
     value: Priority
@@ -1185,6 +1312,10 @@ function Missions() {
         return 'CRÍTICA'
     }
   }
+
+  /* =======================================================
+     FORMATAR VALORES
+  ======================================================= */
 
   function formatValue(
     value:
@@ -1205,6 +1336,10 @@ function Missions() {
     )
   }
 
+  /* =======================================================
+     CALCULAR PARTE
+  ======================================================= */
+
   function calculateShare(
     total:
       | number
@@ -1219,7 +1354,11 @@ function Missions() {
     ) / 100
   }
 
-  function avatar(
+  /* =======================================================
+     AVATAR
+  ======================================================= */
+
+  function renderAvatar(
     url: string | null,
     name: string
   ) {
@@ -1241,9 +1380,9 @@ function Missions() {
     )
   }
 
-  /* =========================================================
-     CARD DE MISSÃO
-  ========================================================= */
+  /* =======================================================
+     CARD DA MISSÃO
+  ======================================================= */
 
   function renderMissionCard(
     mission: Mission,
@@ -1252,7 +1391,7 @@ function Missions() {
       | 'mine'
       | 'completed'
   ) {
-    const member =
+    const membership =
       membershipFor(
         mission.id
       )
@@ -1265,22 +1404,23 @@ function Missions() {
       mission.claimed_by ===
       currentUserId
 
-    const ownPercentage =
+    const percentage =
       Number(
-        member?.reward_percentage ??
+        membership
+          ?.reward_percentage ??
           100
       )
 
-    const ownGold =
+    const personalGold =
       calculateShare(
         mission.gold_reward,
-        ownPercentage
+        percentage
       )
 
-    const ownPlatinum =
+    const personalPlatinum =
       calculateShare(
         mission.platinum_reward,
-        ownPercentage
+        percentage
       )
 
     return (
@@ -1291,6 +1431,8 @@ function Missions() {
           priority-${mission.priority}
         `}
       >
+
+        {/* TOPO */}
 
         <div className="mission-card-top">
 
@@ -1315,6 +1457,7 @@ function Missions() {
 
               <button
                 className="delete-mission-card-button"
+                title="Apagar missão"
                 onClick={() =>
                   deleteMission(
                     mission
@@ -1325,10 +1468,12 @@ function Missions() {
                   mission.id
                 }
               >
+
                 {deletingMissionId ===
                 mission.id
                   ? '...'
                   : '🗑'}
+
               </button>
 
             )}
@@ -1337,28 +1482,36 @@ function Missions() {
 
         </div>
 
+        {/* TIPO */}
+
         <span className="mission-type">
 
           {mode === 'board' &&
             'MISSÃO DA GUILDA'}
 
           {mode === 'mine' &&
-            (isLeader
-              ? 'MISSÃO • LÍDER DA PARTY'
-              : 'MISSÃO • MEMBRO DA PARTY')}
+            (
+              isLeader
+                ? 'MISSÃO • LÍDER DA PARTY'
+                : 'MISSÃO • MEMBRO DA PARTY'
+            )}
 
           {mode === 'completed' &&
             'MISSÃO CONCLUÍDA'}
 
         </span>
 
+        {/* TÍTULO */}
+
         <h2>
           {mission.title}
         </h2>
 
         <p className="mission-description">
+
           {mission.description ||
             'Nenhuma descrição foi adicionada.'}
+
         </p>
 
         {/* RECOMPENSA TOTAL */}
@@ -1425,10 +1578,10 @@ function Missions() {
 
         </div>
 
-        {/* PARTICIPAÇÃO */}
+        {/* PARTE DO USUÁRIO */}
 
         {mode !== 'board' &&
-          member && (
+          membership && (
 
           <div className="mission-personal-share">
 
@@ -1439,7 +1592,7 @@ function Missions() {
               </span>
 
               <strong>
-                {ownPercentage}%
+                {percentage}%
               </strong>
 
             </div>
@@ -1447,14 +1600,16 @@ function Missions() {
             <div className="personal-share-rewards">
 
               <span>
-                ◉ {formatValue(
-                  ownGold
+                ◉{' '}
+                {formatValue(
+                  personalGold
                 )}
               </span>
 
               <span>
-                ◆ {formatValue(
-                  ownPlatinum
+                ◆{' '}
+                {formatValue(
+                  personalPlatinum
                 )}
               </span>
 
@@ -1469,7 +1624,10 @@ function Missions() {
         {mode === 'board' && (
 
           <button
-            className="accept-mission-button accept-mission-active"
+            className="
+              accept-mission-button
+              accept-mission-active
+            "
             onClick={() =>
               acceptMission(
                 mission.id
@@ -1480,15 +1638,17 @@ function Missions() {
               mission.id
             }
           >
+
             {acceptingMissionId ===
             mission.id
               ? 'ACEITANDO...'
               : 'ACEITAR MISSÃO'}
+
           </button>
 
         )}
 
-        {/* MISSÃO ATIVA */}
+        {/* MISSÃO EM ANDAMENTO */}
 
         {mode === 'mine' && (
 
@@ -1502,12 +1662,14 @@ function Missions() {
                 )
               }
             >
+
               {isLeader
                 ? '👥 GERENCIAR PARTY'
                 : '👥 VER PARTY'}
+
             </button>
 
-            {member?.completed ? (
+            {membership?.completed ? (
 
               <div className="my-part-completed">
 
@@ -1522,7 +1684,10 @@ function Missions() {
             ) : (
 
               <button
-                className="complete-mission-button complete-mission-active"
+                className="
+                  complete-mission-button
+                  complete-mission-active
+                "
                 onClick={() =>
                   completeMission(
                     mission
@@ -1533,10 +1698,12 @@ function Missions() {
                   mission.id
                 }
               >
+
                 {completingMissionId ===
                 mission.id
                   ? 'CONCLUINDO...'
                   : '✓ CONCLUÍ MINHA PARTE'}
+
               </button>
 
             )}
@@ -1547,13 +1714,12 @@ function Missions() {
 
         {/* CONCLUÍDA */}
 
-        {mode ===
-          'completed' && (
+        {mode === 'completed' && (
 
           <>
 
             <div className="completed-mission-seal">
-              ✓ PARTY COMPLETA
+              ✓ MISSÃO CONCLUÍDA
             </div>
 
             <span className="completed-reward-text">
@@ -1568,25 +1734,78 @@ function Missions() {
     )
   }
 
-  /* =========================================================
-     ABAS VISÍVEIS
-  ========================================================= */
+  /* =======================================================
+     MISSÕES DA ABA
+  ======================================================= */
 
   const visibleMissions =
     activeTab === 'board'
       ? boardMissions
       : activeTab === 'mine'
         ? myMissions
-        : completedMissions
+        : activeTab ===
+            'completed'
+          ? completedMissions
+          : []
 
-  /* =========================================================
+  /* =======================================================
+     CONTADOR DO STATUS
+  ======================================================= */
+
+  function currentCount() {
+    if (
+      activeTab === 'board'
+    ) {
+      return boardMissions.length
+    }
+
+    if (
+      activeTab === 'mine'
+    ) {
+      return myMissions.length
+    }
+
+    if (
+      activeTab === 'invites'
+    ) {
+      return invites.length
+    }
+
+    return completedMissions.length
+  }
+
+  function currentLabel() {
+    if (
+      activeTab === 'board'
+    ) {
+      return 'MISSÕES DISPONÍVEIS'
+    }
+
+    if (
+      activeTab === 'mine'
+    ) {
+      return 'MISSÕES ATIVAS'
+    }
+
+    if (
+      activeTab === 'invites'
+    ) {
+      return 'CONVITES DE PARTY'
+    }
+
+    return 'MISSÕES CONCLUÍDAS'
+  }
+
+  /* =======================================================
      INTERFACE
-  ========================================================= */
+  ======================================================= */
 
   return (
     <main className="missions-page">
 
       <div className="missions-container">
+
+        {/* CABEÇALHO */}
 
         <header className="missions-header">
 
@@ -1611,7 +1830,7 @@ function Missions() {
 
             <p>
               Enfrente desafios sozinho
-              ou forme uma Party.
+              ou forme uma Party com seus amigos.
             </p>
 
           </div>
@@ -1631,27 +1850,38 @@ function Missions() {
 
         </header>
 
-        {/* ABAS */}
+        {/* =================================================
+            ABAS
+        ================================================= */}
 
         <nav className="mission-tabs mission-tabs-four">
 
+          {/* QUADRO */}
+
           <button
             className={
-              activeTab === 'board'
+              activeTab ===
+              'board'
                 ? 'mission-tab active'
                 : 'mission-tab'
             }
-            onClick={() =>
+            onClick={() => {
+              setMessage('')
+              setSuccessMessage('')
               setActiveTab(
                 'board'
               )
-            }
+            }}
           >
-            <span>⚔</span>
+
+            <span>
+              ⚔
+            </span>
 
             <div>
+
               <strong>
-                QUADRO
+                QUADRO DA GUILDA
               </strong>
 
               <small>
@@ -1659,24 +1889,35 @@ function Missions() {
                 {' '}
                 disponíveis
               </small>
+
             </div>
+
           </button>
+
+          {/* MINHAS */}
 
           <button
             className={
-              activeTab === 'mine'
+              activeTab ===
+              'mine'
                 ? 'mission-tab active'
                 : 'mission-tab'
             }
-            onClick={() =>
+            onClick={() => {
+              setMessage('')
+              setSuccessMessage('')
               setActiveTab(
                 'mine'
               )
-            }
+            }}
           >
-            <span>🛡</span>
+
+            <span>
+              🛡
+            </span>
 
             <div>
+
               <strong>
                 MINHAS MISSÕES
               </strong>
@@ -1684,26 +1925,37 @@ function Missions() {
               <small>
                 {myMissions.length}
                 {' '}
-                ativas
+                em andamento
               </small>
+
             </div>
+
           </button>
+
+          {/* CONVITES */}
 
           <button
             className={
-              activeTab === 'invites'
+              activeTab ===
+              'invites'
                 ? 'mission-tab active'
                 : 'mission-tab'
             }
-            onClick={() =>
+            onClick={() => {
+              setMessage('')
+              setSuccessMessage('')
               setActiveTab(
                 'invites'
               )
-            }
+            }}
           >
-            <span>✉</span>
+
+            <span>
+              ✉
+            </span>
 
             <div>
+
               <strong>
                 CONVITES
               </strong>
@@ -1713,24 +1965,35 @@ function Missions() {
                 {' '}
                 pendentes
               </small>
+
             </div>
+
           </button>
+
+          {/* CONCLUÍDAS */}
 
           <button
             className={
-              activeTab === 'completed'
+              activeTab ===
+              'completed'
                 ? 'mission-tab active'
                 : 'mission-tab'
             }
-            onClick={() =>
+            onClick={() => {
+              setMessage('')
+              setSuccessMessage('')
               setActiveTab(
                 'completed'
               )
-            }
+            }}
           >
-            <span>★</span>
+
+            <span>
+              ★
+            </span>
 
             <div>
+
               <strong>
                 CONCLUÍDAS
               </strong>
@@ -1740,10 +2003,42 @@ function Missions() {
                 {' '}
                 finalizadas
               </small>
+
             </div>
+
           </button>
 
         </nav>
+
+        {/* =================================================
+            STATUS DO QUADRO
+        ================================================= */}
+
+        <section className="mission-board-info">
+
+          <div>
+
+            <span>
+              {currentLabel()}
+            </span>
+
+            <strong>
+              {currentCount()}
+            </strong>
+
+          </div>
+
+          <div className="mission-board-status">
+
+            <span className="status-light" />
+
+            QUADRO ATIVO
+
+          </div>
+
+        </section>
+
+        {/* MENSAGENS */}
 
         {message && (
           <div className="mission-message">
@@ -1775,22 +2070,23 @@ function Missions() {
             ) : invites.length ===
                 0 ? (
 
-              <div className="empty-mission-board">
+              <section className="empty-mission-board">
 
                 <div className="empty-mission-icon">
                   ✉
                 </div>
 
                 <h2>
-                  Nenhum convite
+                  Nenhum convite de Party
                 </h2>
 
                 <p>
-                  Convites para Parties
-                  aparecerão aqui.
+                  Quando um amigo chamar
+                  você para uma missão,
+                  o convite aparecerá aqui.
                 </p>
 
-              </div>
+              </section>
 
             ) : (
 
@@ -1798,7 +2094,6 @@ function Missions() {
 
                 {invites.map(
                   (invite) => {
-
                     const percentage =
                       Number(
                         invite.reward_percentage
@@ -1824,11 +2119,13 @@ function Missions() {
                         className="mission-invite-card"
                       >
 
+                        {/* LÍDER */}
+
                         <div className="invite-leader">
 
                           <div className="invite-leader-avatar">
 
-                            {avatar(
+                            {renderAvatar(
                               invite.leader_avatar_url,
                               invite.leader_name
                             )}
@@ -1846,22 +2143,29 @@ function Missions() {
                             </strong>
 
                             <small>
+
                               {invite.leader_nickname
                                 ? `@${invite.leader_nickname}`
                                 : 'Líder da Party'}
+
                             </small>
 
                           </div>
 
                         </div>
 
+                        {/* MISSÃO */}
+
                         <h2>
                           {invite.title}
                         </h2>
 
                         <p>
-                          {invite.description}
+                          {invite.description ||
+                            'Sem descrição.'}
                         </p>
+
+                        {/* RECOMPENSA */}
 
                         <div className="invite-share">
 
@@ -1880,7 +2184,7 @@ function Missions() {
                           <div>
 
                             <span>
-                              ◉
+                              ◉ GOLD
                             </span>
 
                             <strong>
@@ -1894,7 +2198,7 @@ function Missions() {
                           <div>
 
                             <span>
-                              ◆
+                              ◆ PLATINUM
                             </span>
 
                             <strong>
@@ -1906,6 +2210,8 @@ function Missions() {
                           </div>
 
                         </div>
+
+                        {/* AÇÕES */}
 
                         <div className="mission-invite-actions">
 
@@ -1922,7 +2228,12 @@ function Missions() {
                               invite.mission_id
                             }
                           >
-                            ✓ ACEITAR PARTY
+
+                            {respondingInviteId ===
+                            invite.mission_id
+                              ? 'AGUARDE...'
+                              : '✓ ACEITAR PARTY'}
+
                           </button>
 
                           <button
@@ -1963,13 +2274,19 @@ function Missions() {
         ) : visibleMissions.length ===
             0 ? (
 
+          /* =================================================
+             VAZIO
+          ================================================= */
+
           <section className="empty-mission-board">
 
             <div className="empty-mission-icon">
 
-              {activeTab === 'board'
+              {activeTab ===
+              'board'
                 ? '⚔'
-                : activeTab === 'mine'
+                : activeTab ===
+                    'mine'
                   ? '🛡'
                   : '★'}
 
@@ -1977,17 +2294,35 @@ function Missions() {
 
             <h2>
 
-              {activeTab === 'board'
+              {activeTab ===
+              'board'
                 ? 'Nenhuma missão disponível'
-                : activeTab === 'mine'
+                : activeTab ===
+                    'mine'
                   ? 'Nenhuma missão ativa'
                   : 'Nenhuma missão concluída'}
 
             </h2>
 
+            <p>
+
+              {activeTab ===
+              'board'
+                ? 'A Guilda está tranquila... por enquanto.'
+                : activeTab ===
+                    'mine'
+                  ? 'Aceite uma missão ou aguarde um convite de Party.'
+                  : 'Suas conquistas aparecerão aqui.'}
+
+            </p>
+
           </section>
 
         ) : (
+
+          /* =================================================
+             GRID
+          ================================================= */
 
           <section className="mission-grid">
 
@@ -2096,39 +2431,69 @@ function Missions() {
 
               <div className="priority-selector">
 
-                {(
-                  [
-                    ['low', 'BAIXA'],
-                    ['medium', 'MÉDIA'],
-                    ['high', 'ALTA'],
-                    ['critical', 'CRÍTICA'],
-                  ] as const
-                ).map(
-                  ([
-                    value,
-                    label,
-                  ]) => (
+                <button
+                  type="button"
+                  className={
+                    priority === 'low'
+                      ? 'selected'
+                      : ''
+                  }
+                  onClick={() =>
+                    setPriority(
+                      'low'
+                    )
+                  }
+                >
+                  BAIXA
+                </button>
 
-                    <button
-                      key={value}
-                      type="button"
-                      className={
-                        priority ===
-                        value
-                          ? 'selected'
-                          : ''
-                      }
-                      onClick={() =>
-                        setPriority(
-                          value
-                        )
-                      }
-                    >
-                      {label}
-                    </button>
+                <button
+                  type="button"
+                  className={
+                    priority === 'medium'
+                      ? 'selected'
+                      : ''
+                  }
+                  onClick={() =>
+                    setPriority(
+                      'medium'
+                    )
+                  }
+                >
+                  MÉDIA
+                </button>
 
-                  )
-                )}
+                <button
+                  type="button"
+                  className={
+                    priority === 'high'
+                      ? 'selected'
+                      : ''
+                  }
+                  onClick={() =>
+                    setPriority(
+                      'high'
+                    )
+                  }
+                >
+                  ALTA
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    priority === 'critical'
+                      ? 'selected'
+                      : ''
+                  }
+                  onClick={() =>
+                    setPriority(
+                      'critical'
+                    )
+                  }
+                >
+                  CRÍTICA
+                </button>
 
               </div>
 
@@ -2144,6 +2509,7 @@ function Missions() {
                     type="number"
                     min="0"
                     step="0.01"
+                    placeholder="0"
                     value={
                       goldReward
                     }
@@ -2166,6 +2532,7 @@ function Missions() {
                     type="number"
                     min="0"
                     step="0.01"
+                    placeholder="0"
                     value={
                       platinumReward
                     }
@@ -2189,9 +2556,11 @@ function Missions() {
                   creating
                 }
               >
+
                 {creating
                   ? 'CRIANDO MISSÃO...'
                   : 'PUBLICAR MISSÃO'}
+
               </button>
 
             </div>
@@ -2261,7 +2630,9 @@ function Missions() {
 
               <>
 
-                {/* PARTY ATUAL */}
+                {/* =========================================
+                    PARTY ATUAL
+                ========================================= */}
 
                 <div className="party-current-section">
 
@@ -2282,38 +2653,47 @@ function Missions() {
                         >
 
                           <div className="party-member-avatar">
-                            {avatar(
+
+                            {renderAvatar(
                               member.avatar_url,
                               member.name
                             )}
+
                           </div>
 
                           <div className="party-member-name">
 
                             <strong>
+
                               {member.role ===
                               'leader'
                                 ? '👑 '
                                 : ''}
+
                               {member.name}
+
                             </strong>
 
                             <span>
+
                               {member.nickname
                                 ? `@${member.nickname}`
                                 : member.role ===
                                     'leader'
                                   ? 'Líder'
                                   : 'Membro'}
+
                             </span>
 
                           </div>
 
                           <div className="party-member-percent">
+
                             {Number(
                               member.reward_percentage
                             )}
                             %
+
                           </div>
 
                           <div
@@ -2350,7 +2730,9 @@ function Missions() {
 
                 </div>
 
-                {/* EDIÇÃO SÓ PARA LÍDER */}
+                {/* =========================================
+                    SOMENTE LÍDER EDITA
+                ========================================= */}
 
                 {partyMission.claimed_by ===
                   currentUserId && (
@@ -2381,7 +2763,7 @@ function Missions() {
 
                       <input
                         type="number"
-                        min="0"
+                        min="0.01"
                         max="100"
                         step="0.01"
                         value={
@@ -2400,7 +2782,9 @@ function Missions() {
 
                     </div>
 
-                    {/* AMIGOS */}
+                    {/* =====================================
+                        AMIGOS
+                    ===================================== */}
 
                     <div className="party-friends-list">
 
@@ -2408,9 +2792,12 @@ function Missions() {
                         0 ? (
 
                         <div className="party-no-friends">
-                          Você ainda não possui
-                          amigos disponíveis para
+
+                          Você ainda não
+                          possui amigos
+                          disponíveis para
                           convidar.
+
                         </div>
 
                       ) : (
@@ -2433,6 +2820,7 @@ function Missions() {
                             >
 
                               <button
+                                type="button"
                                 className="party-friend-toggle"
                                 onClick={() =>
                                   toggleFriend(
@@ -2442,18 +2830,22 @@ function Missions() {
                               >
 
                                 <span>
+
                                   {friend.selected
                                     ? '✓'
                                     : '+'}
+
                                 </span>
 
                               </button>
 
                               <div className="party-member-avatar">
-                                {avatar(
+
+                                {renderAvatar(
                                   friend.avatar_url,
                                   friend.name
                                 )}
+
                               </div>
 
                               <div className="party-member-name">
@@ -2463,9 +2855,11 @@ function Missions() {
                                 </strong>
 
                                 <span>
+
                                   {friend.nickname
                                     ? `@${friend.nickname}`
                                     : 'Amigo'}
+
                                 </span>
 
                               </div>
@@ -2476,7 +2870,7 @@ function Missions() {
 
                                   <input
                                     type="number"
-                                    min="0"
+                                    min="0.01"
                                     max="100"
                                     step="0.01"
                                     placeholder="0"
@@ -2508,7 +2902,9 @@ function Missions() {
 
                     </div>
 
-                    {/* TOTAL */}
+                    {/* =====================================
+                        TOTAL
+                    ===================================== */}
 
                     <div
                       className={`
@@ -2538,13 +2934,17 @@ function Missions() {
 
                     </div>
 
-                    {/* PREVIEW */}
+                    {/* =====================================
+                        PREVIEW
+                    ===================================== */}
 
                     <div className="party-reward-preview">
 
                       <h3>
                         PREVISÃO DE RECOMPENSAS
                       </h3>
+
+                      {/* LÍDER */}
 
                       <div className="party-preview-row">
 
@@ -2553,7 +2953,10 @@ function Missions() {
                         </span>
 
                         <strong>
-                          {leaderPercentage || 0}%
+                          {Number(
+                            leaderPercentage
+                          ) || 0}
+                          %
                         </strong>
 
                         <span>
@@ -2582,6 +2985,8 @@ function Missions() {
 
                       </div>
 
+                      {/* AMIGOS */}
+
                       {partySelections
                         .filter(
                           (friend) =>
@@ -2589,8 +2994,7 @@ function Missions() {
                         )
                         .map(
                           (friend) => {
-
-                            const percentage =
+                            const pct =
                               Number(
                                 friend.percentage
                               ) || 0
@@ -2608,7 +3012,7 @@ function Missions() {
                                 </span>
 
                                 <strong>
-                                  {percentage}%
+                                  {pct}%
                                 </strong>
 
                                 <span>
@@ -2616,7 +3020,7 @@ function Missions() {
                                   {formatValue(
                                     calculateShare(
                                       partyMission.gold_reward,
-                                      percentage
+                                      pct
                                     )
                                   )}
                                 </span>
@@ -2626,7 +3030,7 @@ function Missions() {
                                   {formatValue(
                                     calculateShare(
                                       partyMission.platinum_reward,
-                                      percentage
+                                      pct
                                     )
                                   )}
                                 </span>
@@ -2637,6 +3041,10 @@ function Missions() {
                         )}
 
                     </div>
+
+                    {/* =====================================
+                        SALVAR
+                    ===================================== */}
 
                     <button
                       className="save-party-button"
@@ -2652,9 +3060,16 @@ function Missions() {
                           0.001
                       }
                     >
+
                       {savingParty
                         ? 'ENVIANDO CONVITES...'
-                        : '⚔ SALVAR PARTY E ENVIAR CONVITES'}
+                        : partySelections.some(
+                            (friend) =>
+                              friend.selected
+                          )
+                          ? '⚔ SALVAR PARTY E ENVIAR CONVITES'
+                          : '⚔ MANTER MISSÃO SOLO'}
+
                     </button>
 
                   </>
