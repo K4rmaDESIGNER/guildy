@@ -15,6 +15,7 @@ import Missions from './pages/Missions'
 import Ideas from './pages/Ideas'
 import Calculator from './pages/Calculator'
 import ProfileSetup from './pages/ProfileSetup'
+import Profile from './pages/Profile'
 
 function Login({
   session,
@@ -94,7 +95,36 @@ function Login({
             }
           }}
         />
+        <button
+          className="rpg-menu-card profile-menu-card"
+          onClick={() =>
+            navigate('/profile')
+          }
+        >
+          <div className="rpg-menu-frame profile-frame">
 
+            <div className="rpg-menu-icon">
+              👤
+            </div>
+
+            <div className="rpg-menu-content">
+
+              <span>
+                CONTA DA GUILDA
+              </span>
+
+              <strong>
+                PERFIL
+              </strong>
+
+            </div>
+
+            <div className="rpg-menu-arrow">
+              ›
+            </div>
+
+          </div>
+        </button>
         <button
           onClick={login}
           disabled={loading}
@@ -330,7 +360,14 @@ function App() {
             )
           }
         />
-
+        <Route
+          path="/profile"
+          element={
+            session && profileComplete
+              ? <Profile />
+              : <Navigate to="/" />
+          }
+        />
         <Route
           path="*"
           element={
