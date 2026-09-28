@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
+
 import {
   BrowserRouter,
   Routes,
@@ -17,183 +18,316 @@ import Calculator from './pages/Calculator'
 import ProfileSetup from './pages/ProfileSetup'
 import Profile from './pages/Profile'
 
-function Login({
-  session,
-}: {
-  session: Session | null
-}) {
+/* =========================================================
+   TELA DE CARREGAMENTO
+========================================================= */
+
+function LoadingScreen() {
+  return (
+    <div className="loading">
+      Carregando GUILDY...
+    </div>
+  )
+}
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
+function Login() {
   const navigate = useNavigate()
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [message, setMessage] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail] =
+    useState('')
 
-  useEffect(() => {
-    if (session) {
-      navigate('/home')
-    }
-  }, [session, navigate])
+  const [password, setPassword] =
+    useState('')
 
-  async function login() {
-    if (!email || !password) {
-      setMessage('Preencha e-mail e senha.')
+  const [loading, setLoading] =
+    useState(false)
+
+  const [message, setMessage] =
+    useState('')
+
+  async function handleLogin(
+    event: React.FormEvent
+  ) {
+    event.preventDefault()
+
+    setMessage('')
+
+    if (
+      !email.trim() ||
+      !password.trim()
+    ) {
+      setMessage(
+        'Preencha o e-mail e a senha.'
+      )
+
       return
     }
 
     setLoading(true)
-    setMessage('Entrando...')
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const {
+      data,
+      error,
+    } = await supabase.auth
+      .signInWithPassword({
+        email:
+          email.trim(),
+
+        password,
+      })
 
     if (error) {
-      console.error(error)
-      setMessage('E-mail ou senha incorretos.')
+      console.error(
+        'Erro no login:',
+        error
+      )
+
+      setMessage(
+        'E-mail ou senha incorretos.'
+      )
+
       setLoading(false)
       return
     }
 
-    setMessage('')
+    if (
+      data.session
+    ) {
+      navigate('/home')
+    }
+
     setLoading(false)
-
-    navigate('/home')
-  }
-
-  if (session) {
-    return <Navigate to="/home" replace />
   }
 
   return (
     <main className="login-page">
+
       <section className="login-box">
-        <h1>GUILDY</h1>
 
-        <p>Entre na Guilda</p>
+        <span className="login-small">
+          SISTEMA DA GUILDA
+        </span>
 
-        <input
-          type="email"
-          placeholder="E-mail"
-          value={email}
-          onChange={(event) =>
-            setEmail(event.target.value)
+        <h1>
+          GUILDY
+        </h1>
+
+        <p>
+          Organize. Complete.
+          Evolua.
+        </p>
+
+        <form
+          onSubmit={
+            handleLogin
           }
-        />
+        >
 
-        <input
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={(event) =>
-            setPassword(event.target.value)
-          }
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              login()
+          <input
+            type="email"
+            placeholder="E-mail"
+            autoComplete="email"
+            value={email}
+            onChange={(
+              event
+            ) =>
+              setEmail(
+                event.target.value
+              )
             }
-          }}
-        />
-        <button
-          className="rpg-menu-card profile-menu-card"
-          onClick={() =>
-            navigate('/profile')
-          }
-        >
-          <div className="rpg-menu-frame profile-frame">
+          />
 
-            <div className="rpg-menu-icon">
-              👤
-            </div>
+          <input
+            type="password"
+            placeholder="Senha"
+            autoComplete="current-password"
+            value={password}
+            onChange={(
+              event
+            ) =>
+              setPassword(
+                event.target.value
+              )
+            }
+          />
 
-            <div className="rpg-menu-content">
+          <button
+            type="submit"
+            disabled={
+              loading
+            }
+          >
 
-              <span>
-                CONTA DA GUILDA
-              </span>
+            {loading
+              ? 'ENTRANDO...'
+              : 'ENTRAR NA GUILDA'}
 
-              <strong>
-                PERFIL
-              </strong>
+          </button>
 
-            </div>
-
-            <div className="rpg-menu-arrow">
-              ›
-            </div>
-
-          </div>
-        </button>
-        <button
-          onClick={login}
-          disabled={loading}
-        >
-          {loading ? 'Entrando...' : 'Entrar'}
-        </button>
+        </form>
 
         {message && (
-          <p className="message">
+          <div className="message">
             {message}
-          </p>
+          </div>
         )}
+
       </section>
+
     </main>
   )
 }
 
-function App() {
+/* =========================================================
+   APP INTERNO
+========================================================= */
+
+function AppContent() {
   const [session, setSession] =
-    useState<Session | null>(null)
-
-  const [loading, setLoading] =
-    useState(true)
-
-  const [profileComplete, setProfileComplete] =
-    useState<boolean | null>(null)
-
-  useEffect(() => {
-    async function carregarSessao() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      setSession(session)
-      setLoading(false)
-    }
-
-    carregarSessao()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
-        setSession(newSession)
-
-        if (!newSession) {
-          setProfileComplete(null)
-        }
-      }
+    useState<Session | null>(
+      null
     )
 
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
+  /*
+    null = ainda verificando
+    false = onboarding incompleto
+    true = onboarding completo
+  */
+
+  const [
+    profileComplete,
+    setProfileComplete,
+  ] =
+    useState<
+      boolean | null
+    >(null)
+
+  const [
+    loadingSession,
+    setLoadingSession,
+  ] =
+    useState(true)
+
+  /* =======================================================
+     SESSÃO SUPABASE
+  ======================================================= */
 
   useEffect(() => {
-    async function verificarPerfil() {
-      if (!session) {
-        setProfileComplete(null)
+    let mounted =
+      true
+
+    async function loadSession() {
+      const {
+        data,
+      } =
+        await supabase.auth
+          .getSession()
+
+      if (
+        !mounted
+      ) {
         return
       }
 
-      const { data, error } =
+      setSession(
+        data.session
+      )
+
+      setLoadingSession(
+        false
+      )
+    }
+
+    loadSession()
+
+    const {
+      data: {
+        subscription,
+      },
+    } =
+      supabase.auth
+        .onAuthStateChange(
+          (
+            _event,
+            newSession
+          ) => {
+            setSession(
+              newSession
+            )
+
+            if (
+              !newSession
+            ) {
+              setProfileComplete(
+                null
+              )
+            }
+          }
+        )
+
+    return () => {
+      mounted =
+        false
+
+      subscription
+        .unsubscribe()
+    }
+  }, [])
+
+  /* =======================================================
+     VERIFICAR ONBOARDING
+  ======================================================= */
+
+  useEffect(() => {
+    let cancelled =
+      false
+
+    async function checkProfile() {
+      if (
+        !session?.user
+      ) {
+        setProfileComplete(
+          null
+        )
+
+        return
+      }
+
+      /*
+        Enquanto consulta o perfil,
+        deixamos como null para
+        impedir redirecionamentos
+        prematuros.
+      */
+
+      setProfileComplete(
+        null
+      )
+
+      const {
+        data,
+        error,
+      } =
         await supabase
           .from('profiles')
-          .select('onboarding_completed')
-          .eq('id', session.user.id)
+          .select(
+            'onboarding_completed'
+          )
+          .eq(
+            'id',
+            session.user.id
+          )
           .single()
+
+      if (
+        cancelled
+      ) {
+        return
+      }
 
       if (error) {
         console.error(
@@ -201,184 +335,285 @@ function App() {
           error
         )
 
-        setProfileComplete(false)
+        /*
+          Em caso de erro/perfil
+          incompleto, mandamos para
+          configuração do perfil.
+        */
+
+        setProfileComplete(
+          false
+        )
+
         return
       }
 
       setProfileComplete(
-        Boolean(data?.onboarding_completed)
+        Boolean(
+          data
+            ?.onboarding_completed
+        )
       )
     }
 
-    verificarPerfil()
-  }, [session])
+    checkProfile()
 
-  if (loading) {
+    return () => {
+      cancelled =
+        true
+    }
+  }, [
+    session?.user.id,
+  ])
+
+  /* =======================================================
+     CARREGAMENTO INICIAL
+  ======================================================= */
+
+  if (
+    loadingSession
+  ) {
     return (
-      <div className="loading">
-        Carregando GUILDY...
-      </div>
+      <LoadingScreen />
     )
   }
 
+  /* =======================================================
+     FUNÇÃO AUXILIAR PARA ROTAS PROTEGIDAS
+  ======================================================= */
+
+  function protectedPage(
+    page: React.ReactNode
+  ) {
+    if (
+      !session
+    ) {
+      return (
+        <Navigate
+          to="/"
+          replace
+        />
+      )
+    }
+
+    if (
+      profileComplete ===
+      null
+    ) {
+      return (
+        <LoadingScreen />
+      )
+    }
+
+    if (
+      !profileComplete
+    ) {
+      return (
+        <Navigate
+          to="/setup-profile"
+          replace
+        />
+      )
+    }
+
+    return page
+  }
+
+  /* =======================================================
+     ROTAS
+  ======================================================= */
+
   return (
-    <BrowserRouter>
-      <Routes>
+    <Routes>
 
-        <Route
-          path="/"
-          element={
-            <Login session={session} />
-          }
-        />
+      {/* ===============================================
+          LOGIN / ENTRADA
+      =============================================== */}
 
-        <Route
-          path="/setup-profile"
-          element={
-            session ? (
-              profileComplete === null ? (
-                <div className="loading">
-                  Verificando perfil...
-                </div>
-              ) : profileComplete ? (
-                <Navigate
-                  to="/home"
-                  replace
-                />
-              ) : (
-                <ProfileSetup
-                  onCompleted={() =>
-                    setProfileComplete(true)
-                  }
-                />
-              )
-            ) : (
-              <Navigate
-                to="/"
-                replace
-              />
-            )
-          }
-        />
+      <Route
+        path="/"
+        element={
+          !session ? (
 
-        <Route
-          path="/home"
-          element={
-            session ? (
-              profileComplete === null ? (
-                <div className="loading">
-                  Carregando perfil...
-                </div>
-              ) : profileComplete ? (
-                <Home />
-              ) : (
-                <Navigate
-                  to="/setup-profile"
-                  replace
-                />
-              )
-            ) : (
-              <Navigate
-                to="/"
-                replace
-              />
-            )
-          }
-        />
+            <Login />
 
-        <Route
-          path="/missions"
-          element={
-            session ? (
-              profileComplete === null ? (
-                <div className="loading">
-                  Carregando perfil...
-                </div>
-              ) : profileComplete ? (
-                <Missions />
-              ) : (
-                <Navigate
-                  to="/setup-profile"
-                  replace
-                />
-              )
-            ) : (
-              <Navigate
-                to="/"
-                replace
-              />
-            )
-          }
-        />
+          ) : profileComplete ===
+            null ? (
 
-        <Route
-          path="/ideas"
-          element={
-            session ? (
-              profileComplete === null ? (
-                <div className="loading">
-                  Carregando perfil...
-                </div>
-              ) : profileComplete ? (
-                <Ideas />
-              ) : (
-                <Navigate
-                  to="/setup-profile"
-                  replace
-                />
-              )
-            ) : (
-              <Navigate
-                to="/"
-                replace
-              />
-            )
-          }
-        />
+            <LoadingScreen />
 
-        <Route
-          path="/calculator"
-          element={
-            session ? (
-              profileComplete === null ? (
-                <div className="loading">
-                  Carregando perfil...
-                </div>
-              ) : profileComplete ? (
-                <Calculator />
-              ) : (
-                <Navigate
-                  to="/setup-profile"
-                  replace
-                />
-              )
-            ) : (
-              <Navigate
-                to="/"
-                replace
-              />
-            )
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            session && profileComplete
-              ? <Profile />
-              : <Navigate to="/" />
-          }
-        />
-        <Route
-          path="*"
-          element={
+          ) : profileComplete ? (
+
             <Navigate
-              to={session ? '/home' : '/'}
+              to="/home"
               replace
             />
-          }
-        />
 
-      </Routes>
+          ) : (
+
+            <Navigate
+              to="/setup-profile"
+              replace
+            />
+
+          )
+        }
+      />
+
+      {/* ===============================================
+          PRIMEIRO PERFIL
+      =============================================== */}
+
+      <Route
+        path="/setup-profile"
+        element={
+          !session ? (
+
+            <Navigate
+              to="/"
+              replace
+            />
+
+          ) : profileComplete ===
+            null ? (
+
+            <LoadingScreen />
+
+          ) : profileComplete ? (
+
+            <Navigate
+              to="/home"
+              replace
+            />
+
+          ) : (
+
+            <ProfileSetup
+              onCompleted={() => {
+                setProfileComplete(
+                  true
+                )
+              }}
+            />
+
+          )
+        }
+      />
+
+      {/* ===============================================
+          HOME
+      =============================================== */}
+
+      <Route
+        path="/home"
+        element={
+          protectedPage(
+            <Home />
+          )
+        }
+      />
+
+      {/* ===============================================
+          MISSÕES
+      =============================================== */}
+
+      <Route
+        path="/missions"
+        element={
+          protectedPage(
+            <Missions />
+          )
+        }
+      />
+
+      {/* ===============================================
+          IDEIAS
+      =============================================== */}
+
+      <Route
+        path="/ideas"
+        element={
+          protectedPage(
+            <Ideas />
+          )
+        }
+      />
+
+      {/* ===============================================
+          CALCULADORA
+      =============================================== */}
+
+      <Route
+        path="/calculator"
+        element={
+          protectedPage(
+            <Calculator />
+          )
+        }
+      />
+
+      {/* ===============================================
+          PERFIL
+      =============================================== */}
+
+      <Route
+        path="/profile"
+        element={
+          protectedPage(
+            <Profile />
+          )
+        }
+      />
+
+      {/* ===============================================
+          QUALQUER OUTRO ENDEREÇO
+      =============================================== */}
+
+      <Route
+        path="*"
+        element={
+          !session ? (
+
+            <Navigate
+              to="/"
+              replace
+            />
+
+          ) : profileComplete ===
+            null ? (
+
+            <LoadingScreen />
+
+          ) : profileComplete ? (
+
+            <Navigate
+              to="/home"
+              replace
+            />
+
+          ) : (
+
+            <Navigate
+              to="/setup-profile"
+              replace
+            />
+
+          )
+        }
+      />
+
+    </Routes>
+  )
+}
+
+/* =========================================================
+   APP PRINCIPAL
+========================================================= */
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   )
 }
