@@ -23,12 +23,20 @@ type SearchResult = {
   name: string
   nickname: string | null
   avatar_url: string | null
-
   relation_status:
     | 'none'
     | 'friend'
     | 'request_sent'
     | 'request_received'
+}
+
+type FriendRequest = {
+  request_id: string
+  sender_id: string
+  name: string
+  nickname: string | null
+  avatar_url: string | null
+  created_at: string
 }
 
 type ProfileTab =
@@ -75,6 +83,19 @@ function Profile() {
     useState(false)
 
   /* =========================================================
+     SOLICITAÇÕES
+  ========================================================= */
+
+  const [requests, setRequests] =
+    useState<FriendRequest[]>([])
+
+  const [loadingRequests, setLoadingRequests] =
+    useState(false)
+
+  const [respondingRequestId, setRespondingRequestId] =
+    useState<string | null>(null)
+
+  /* =========================================================
      BUSCA
   ========================================================= */
 
@@ -110,15 +131,15 @@ function Profile() {
   useEffect(() => {
     loadProfile()
     loadFriends()
+    loadRequests()
   }, [])
 
   /* =========================================================
-     CARREGAR PERFIL
+     PERFIL
   ========================================================= */
 
   async function loadProfile() {
     setLoading(true)
-    setMessage('')
 
     const {
       data: { user },
@@ -194,9 +215,7 @@ function Profile() {
       data,
       error,
     } = await supabase
-      .from(
-        'platinum_transactions'
-      )
+      .from('platinum_transactions')
       .select('amount')
       .eq(
         'user_id',
@@ -231,7 +250,7 @@ function Profile() {
   }
 
   /* =========================================================
-     CARREGAR AMIGOS
+     AMIGOS
   ========================================================= */
 
   async function loadFriends() {
@@ -259,6 +278,109 @@ function Profile() {
     )
 
     setLoadingFriends(false)
+  }
+
+  /* =========================================================
+     SOLICITAÇÕES RECEBIDAS
+  ========================================================= */
+
+  async function loadRequests() {
+    setLoadingRequests(true)
+
+    const {
+      data,
+      error,
+    } = await supabase.rpc(
+      'get_received_friend_requests'
+    )
+
+    if (error) {
+      console.error(
+        'Erro ao carregar solicitações:',
+        error
+      )
+
+      setLoadingRequests(false)
+      return
+    }
+
+    setRequests(
+      (data as FriendRequest[]) ??
+        []
+    )
+
+    setLoadingRequests(false)
+  }
+
+  /* =========================================================
+     ACEITAR / RECUSAR
+  ========================================================= */
+
+  async function respondRequest(
+    request: FriendRequest,
+    accept: boolean
+  ) {
+    setMessage('')
+    setSuccessMessage('')
+
+    setRespondingRequestId(
+      request.request_id
+    )
+
+    const {
+      error,
+    } = await supabase.rpc(
+      'respond_friend_request',
+      {
+        p_request_id:
+          request.request_id,
+
+        p_accept:
+          accept,
+      }
+    )
+
+    if (error) {
+      console.error(
+        'Erro ao responder solicitação:',
+        error
+      )
+
+      setMessage(
+        'Não foi possível responder à solicitação.'
+      )
+
+      setRespondingRequestId(
+        null
+      )
+
+      return
+    }
+
+    setRequests(
+      (currentRequests) =>
+        currentRequests.filter(
+          (item) =>
+            item.request_id !==
+            request.request_id
+        )
+    )
+
+    setRespondingRequestId(
+      null
+    )
+
+    if (accept) {
+      setSuccessMessage(
+        `${request.name} agora faz parte dos seus amigos!`
+      )
+
+      await loadFriends()
+    } else {
+      setSuccessMessage(
+        `Solicitação de ${request.name} recusada.`
+      )
+    }
   }
 
   /* =========================================================
@@ -314,9 +436,6 @@ function Profile() {
     } = await supabase.auth.getUser()
 
     if (!user) {
-      setMessage(
-        'Usuário não autenticado.'
-      )
       return
     }
 
@@ -345,11 +464,6 @@ function Profile() {
       .single()
 
     if (error) {
-      console.error(
-        'Erro ao salvar nickname:',
-        error
-      )
-
       if (
         error.code ===
         '23505'
@@ -367,15 +481,12 @@ function Profile() {
       return
     }
 
-    const updated =
-      data as ProfileData
-
     setProfile(
-      updated
+      data as ProfileData
     )
 
     setNickname(
-      updated.nickname ?? ''
+      data.nickname ?? ''
     )
 
     setSaving(false)
@@ -404,7 +515,6 @@ function Profile() {
       setMessage(
         'Digite pelo menos 3 caracteres para buscar.'
       )
-
       return
     }
 
@@ -468,16 +578,11 @@ function Profile() {
     )
 
     if (error) {
-      console.error(
-        'Erro ao enviar pedido:',
-        error
-      )
-
-      const lowerMessage =
+      const lower =
         error.message.toLowerCase()
 
       if (
-        lowerMessage.includes(
+        lower.includes(
           'já são amigos'
         )
       ) {
@@ -485,24 +590,24 @@ function Profile() {
           'Vocês já são amigos.'
         )
       } else if (
-        lowerMessage.includes(
+        lower.includes(
           'já enviado'
         )
       ) {
         setMessage(
-          'Você já enviou um pedido para este membro.'
+          'Pedido já enviado.'
         )
       } else if (
-        lowerMessage.includes(
+        lower.includes(
           'já enviou uma solicitação'
         )
       ) {
         setMessage(
-          'Esse membro já enviou uma solicitação para você. Veja a aba Solicitações.'
+          'Esse membro já enviou uma solicitação para você.'
         )
       } else {
         setMessage(
-          'Não foi possível enviar o pedido de amizade.'
+          'Não foi possível enviar o pedido.'
         )
       }
 
@@ -513,15 +618,9 @@ function Profile() {
       return
     }
 
-    /*
-      Atualizamos somente o resultado
-      correspondente sem precisar
-      refazer a busca.
-    */
-
     setSearchResults(
-      (currentResults) =>
-        currentResults.map(
+      (current) =>
+        current.map(
           (item) =>
             item.user_id ===
             member.user_id
@@ -539,12 +638,12 @@ function Profile() {
     )
 
     setSuccessMessage(
-      `Pedido de amizade enviado para ${member.name}!`
+      `Pedido enviado para ${member.name}!`
     )
   }
 
   /* =========================================================
-     FORMATAÇÃO
+     FORMATAR
   ========================================================= */
 
   function formatDate(
@@ -552,40 +651,34 @@ function Profile() {
   ) {
     return new Date(date)
       .toLocaleDateString(
-        'pt-BR',
-        {
-          day: '2-digit',
-          month: 'long',
-          year: 'numeric',
-        }
+        'pt-BR'
       )
   }
 
   function formatPlatinum(
     value: number
   ) {
-    return value
-      .toLocaleString(
-        'pt-BR',
-        {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }
-      )
+    return value.toLocaleString(
+      'pt-BR',
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }
+    )
   }
 
   /* =========================================================
      AVATAR
   ========================================================= */
 
-  function renderAvatar(
-    avatarUrl: string | null,
+  function avatar(
+    url: string | null,
     name: string
   ) {
-    if (avatarUrl) {
+    if (url) {
       return (
         <img
-          src={avatarUrl}
+          src={url}
           alt={name}
         />
       )
@@ -601,10 +694,10 @@ function Profile() {
   }
 
   /* =========================================================
-     BOTÃO DE RELAÇÃO
+     STATUS DA BUSCA
   ========================================================= */
 
-  function renderRelationButton(
+  function relationButton(
     member: SearchResult
   ) {
     if (
@@ -636,13 +729,15 @@ function Profile() {
       return (
         <button
           className="friend-request-received-button"
-          onClick={() =>
+          onClick={() => {
             setActiveTab(
               'requests'
             )
-          }
+
+            loadRequests()
+          }}
         >
-          ✉ RESPONDER SOLICITAÇÃO
+          ✉ VER SOLICITAÇÃO
         </button>
       )
     }
@@ -660,12 +755,10 @@ function Profile() {
           member.user_id
         }
       >
-
         {sendingRequestId ===
         member.user_id
           ? 'ENVIANDO...'
           : '+ ADICIONAR AMIGO'}
-
       </button>
     )
   }
@@ -677,11 +770,9 @@ function Profile() {
   if (loading) {
     return (
       <main className="profile-page">
-
         <div className="profile-loading">
           Carregando membro da Guilda...
         </div>
-
       </main>
     )
   }
@@ -689,11 +780,9 @@ function Profile() {
   if (!profile) {
     return (
       <main className="profile-page">
-
         <div className="profile-loading">
           Perfil não encontrado.
         </div>
-
       </main>
     )
   }
@@ -707,70 +796,41 @@ function Profile() {
 
       <div className="profile-container">
 
-        {/* ===================================================
-            CABEÇALHO
-        =================================================== */}
-
         <header className="profile-header">
 
-          <div>
+          <button
+            className="profile-back-button"
+            onClick={() =>
+              navigate('/home')
+            }
+          >
+            ← VOLTAR
+          </button>
 
-            <button
-              className="profile-back-button"
-              onClick={() =>
-                navigate('/home')
-              }
-            >
-              ← VOLTAR
-            </button>
+          <span className="profile-kicker">
+            CONTA DA GUILDA
+          </span>
 
-            <span className="profile-kicker">
-              CONTA DA GUILDA
-            </span>
+          <h1>
+            👤 PERFIL
+          </h1>
 
-            <h1>
-              👤 PERFIL
-            </h1>
-
-            <p>
-              Sua identidade e seus
-              companheiros dentro
-              do GUILDY.
-            </p>
-
-          </div>
+          <p>
+            Sua identidade e seus
+            companheiros dentro do GUILDY.
+          </p>
 
         </header>
 
-        {/* ===================================================
-            PERSONAGEM
-        =================================================== */}
+        {/* PERFIL SUPERIOR */}
 
         <section className="profile-hero">
 
           <div className="profile-avatar-frame">
-
-            {profile.avatar_url ? (
-
-              <img
-                src={
-                  profile.avatar_url
-                }
-                alt={
-                  profile.name
-                }
-              />
-
-            ) : (
-
-              <div className="profile-avatar-fallback">
-                {profile.name
-                  .charAt(0)
-                  .toUpperCase()}
-              </div>
-
+            {avatar(
+              profile.avatar_url,
+              profile.name
             )}
-
           </div>
 
           <div className="profile-hero-info">
@@ -784,11 +844,9 @@ function Profile() {
             </h2>
 
             <strong>
-
               {profile.nickname
                 ? `@${profile.nickname}`
                 : 'Sem nickname'}
-
             </strong>
 
             <small>
@@ -821,35 +879,28 @@ function Profile() {
 
         </section>
 
-        {/* ===================================================
-            ABAS
-        =================================================== */}
+        {/* ABAS */}
 
         <nav className="profile-tabs">
 
           <button
             className={
-              activeTab ===
-              'profile'
+              activeTab === 'profile'
                 ? 'profile-tab active'
                 : 'profile-tab'
             }
-            onClick={() => {
+            onClick={() =>
               setActiveTab(
                 'profile'
               )
-
-              setMessage('')
-              setSuccessMessage('')
-            }}
+            }
           >
             👤 MEU PERFIL
           </button>
 
           <button
             className={
-              activeTab ===
-              'friends'
+              activeTab === 'friends'
                 ? 'profile-tab active'
                 : 'profile-tab'
             }
@@ -858,21 +909,15 @@ function Profile() {
                 'friends'
               )
 
-              setMessage('')
-              setSuccessMessage('')
-
               loadFriends()
             }}
           >
-            👥 AMIGOS
-            {' '}
-            ({friends.length})
+            👥 AMIGOS ({friends.length})
           </button>
 
           <button
             className={
-              activeTab ===
-              'requests'
+              activeTab === 'requests'
                 ? 'profile-tab active'
                 : 'profile-tab'
             }
@@ -881,16 +926,15 @@ function Profile() {
                 'requests'
               )
 
-              setMessage('')
-              setSuccessMessage('')
+              loadRequests()
             }}
           >
             ✉ SOLICITAÇÕES
+            {requests.length > 0 &&
+              ` (${requests.length})`}
           </button>
 
         </nav>
-
-        {/* MENSAGENS */}
 
         {message && (
           <div className="profile-error-message">
@@ -904,9 +948,9 @@ function Profile() {
           </div>
         )}
 
-        {/* ===================================================
+        {/* =================================================
             MEU PERFIL
-        =================================================== */}
+        ================================================= */}
 
         {activeTab ===
           'profile' && (
@@ -965,7 +1009,7 @@ function Profile() {
 
               </div>
 
-              <div className="profile-info-field nickname-field">
+              <div className="profile-info-field">
 
                 <label>
                   Nickname
@@ -978,31 +1022,20 @@ function Profile() {
                   </span>
 
                   <input
-                    type="text"
-                    maxLength={24}
                     value={
                       nickname
                     }
-                    placeholder="seunickname"
+                    maxLength={24}
                     onChange={(
                       event
-                    ) => {
+                    ) =>
                       setNickname(
                         event.target.value
                       )
-
-                      setMessage('')
-                      setSuccessMessage('')
-                    }}
+                    }
                   />
 
                 </div>
-
-                <small>
-                  Letras, números,
-                  ponto e underline.
-                  De 3 a 24 caracteres.
-                </small>
 
               </div>
 
@@ -1017,27 +1050,23 @@ function Profile() {
                 saving
               }
             >
-
               {saving
                 ? 'SALVANDO...'
                 : 'SALVAR PERFIL'}
-
             </button>
 
           </section>
 
         )}
 
-        {/* ===================================================
+        {/* =================================================
             AMIGOS
-        =================================================== */}
+        ================================================= */}
 
         {activeTab ===
           'friends' && (
 
           <section className="profile-panel">
-
-            {/* BUSCA */}
 
             <div className="profile-section-title">
 
@@ -1048,12 +1077,6 @@ function Profile() {
               <h2>
                 Encontrar membros
               </h2>
-
-              <p className="friends-section-description">
-                Procure alguém pelo
-                nickname ou pelo e-mail
-                usado no GUILDY.
-              </p>
 
             </div>
 
@@ -1066,8 +1089,7 @@ function Profile() {
                 </span>
 
                 <input
-                  type="text"
-                  placeholder="@nickname ou email@exemplo.com"
+                  placeholder="@nickname ou email"
                   value={
                     searchQuery
                   }
@@ -1080,10 +1102,6 @@ function Profile() {
 
                     setHasSearched(
                       false
-                    )
-
-                    setSearchResults(
-                      []
                     )
                   }}
                   onKeyDown={(
@@ -1109,18 +1127,15 @@ function Profile() {
                   searching
                 }
               >
-
                 {searching
                   ? 'BUSCANDO...'
                   : 'BUSCAR'}
-
               </button>
 
             </div>
 
-            {/* RESULTADOS */}
-
             {hasSearched && (
+
               <div className="friend-search-results">
 
                 <div className="friends-list-heading">
@@ -1130,16 +1145,13 @@ function Profile() {
                   </span>
 
                   <strong>
-                    {
-                      searchResults.length
-                    }
+                    {searchResults.length}
                   </strong>
 
                 </div>
 
                 {searchResults.length ===
-                  0 &&
-                !searching ? (
+                  0 ? (
 
                   <div className="friends-empty-state">
 
@@ -1150,12 +1162,6 @@ function Profile() {
                     <h3>
                       Nenhum membro encontrado
                     </h3>
-
-                    <p>
-                      Confira o nickname
-                      ou digite o e-mail
-                      completo da pessoa.
-                    </p>
 
                   </div>
 
@@ -1174,12 +1180,10 @@ function Profile() {
                         >
 
                           <div className="friend-avatar">
-
-                            {renderAvatar(
+                            {avatar(
                               member.avatar_url,
                               member.name
                             )}
-
                           </div>
 
                           <div className="friend-member-info">
@@ -1193,21 +1197,17 @@ function Profile() {
                             </h3>
 
                             <strong>
-
                               {member.nickname
                                 ? `@${member.nickname}`
                                 : 'Sem nickname'}
-
                             </strong>
 
                           </div>
 
                           <div className="friend-member-action">
-
-                            {renderRelationButton(
+                            {relationButton(
                               member
                             )}
-
                           </div>
 
                         </article>
@@ -1220,16 +1220,17 @@ function Profile() {
                 )}
 
               </div>
+
             )}
 
-            {/* LISTA DE AMIGOS */}
+            {/* LISTA */}
 
             <div className="my-friends-section">
 
               <div className="friends-list-heading">
 
                 <span>
-                  SUA PARTY SOCIAL
+                  SEUS AMIGOS
                 </span>
 
                 <strong>
@@ -1257,13 +1258,6 @@ function Profile() {
                     Nenhum amigo ainda
                   </h3>
 
-                  <p>
-                    Procure outro membro
-                    acima e envie seu
-                    primeiro pedido de
-                    amizade.
-                  </p>
-
                 </div>
 
               ) : (
@@ -1281,12 +1275,10 @@ function Profile() {
                       >
 
                         <div className="friend-avatar">
-
-                          {renderAvatar(
+                          {avatar(
                             friend.avatar_url,
                             friend.name
                           )}
-
                         </div>
 
                         <div className="friend-member-info">
@@ -1300,11 +1292,9 @@ function Profile() {
                           </h3>
 
                           <strong>
-
                             {friend.nickname
                               ? `@${friend.nickname}`
                               : 'Sem nickname'}
-
                           </strong>
 
                         </div>
@@ -1332,32 +1322,137 @@ function Profile() {
 
         )}
 
-        {/* ===================================================
+        {/* =================================================
             SOLICITAÇÕES
-        =================================================== */}
+        ================================================= */}
 
         {activeTab ===
           'requests' && (
 
-          <section className="profile-panel social-placeholder">
+          <section className="profile-panel">
 
-            <div className="social-placeholder-icon">
-              ✉
+            <div className="profile-section-title">
+
+              <span>
+                CONVITES SOCIAIS
+              </span>
+
+              <h2>
+                Solicitações de amizade
+              </h2>
+
             </div>
 
-            <h2>
-              Solicitações de amizade
-            </h2>
+            {loadingRequests ? (
 
-            <p>
-              Os pedidos recebidos
-              aparecerão aqui.
-            </p>
+              <div className="friends-loading">
+                Carregando solicitações...
+              </div>
 
-            <div className="social-next-feature">
-              PRÓXIMA ETAPA:
-              ACEITAR OU RECUSAR
-            </div>
+            ) : requests.length ===
+                0 ? (
+
+              <div className="friends-empty-state">
+
+                <span>
+                  ✉
+                </span>
+
+                <h3>
+                  Nenhuma solicitação
+                </h3>
+
+                <p>
+                  Quando alguém quiser
+                  adicionar você,
+                  aparecerá aqui.
+                </p>
+
+              </div>
+
+            ) : (
+
+              <div className="friend-cards-list request-list">
+
+                {requests.map(
+                  (request) => (
+
+                    <article
+                      key={
+                        request.request_id
+                      }
+                      className="friend-member-card request-card"
+                    >
+
+                      <div className="friend-avatar">
+                        {avatar(
+                          request.avatar_url,
+                          request.name
+                        )}
+                      </div>
+
+                      <div className="friend-member-info">
+
+                        <span>
+                          PEDIDO DE AMIZADE
+                        </span>
+
+                        <h3>
+                          {request.name}
+                        </h3>
+
+                        <strong>
+                          {request.nickname
+                            ? `@${request.nickname}`
+                            : 'Sem nickname'}
+                        </strong>
+
+                      </div>
+
+                      <div className="friend-request-actions">
+
+                        <button
+                          className="accept-friend-button"
+                          disabled={
+                            respondingRequestId ===
+                            request.request_id
+                          }
+                          onClick={() =>
+                            respondRequest(
+                              request,
+                              true
+                            )
+                          }
+                        >
+                          ✓ ACEITAR
+                        </button>
+
+                        <button
+                          className="decline-friend-button"
+                          disabled={
+                            respondingRequestId ===
+                            request.request_id
+                          }
+                          onClick={() =>
+                            respondRequest(
+                              request,
+                              false
+                            )
+                          }
+                        >
+                          ✕ RECUSAR
+                        </button>
+
+                      </div>
+
+                    </article>
+
+                  )
+                )}
+
+              </div>
+
+            )}
 
           </section>
 
