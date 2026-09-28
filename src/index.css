@@ -6333,3 +6333,616 @@ button {
   }
 
 }
+/* =========================================================
+   PERFIL - SISTEMA DE AMIGOS
+========================================================= */
+
+.friends-section-description {
+  margin:
+    8px 0 0;
+
+  color:
+    #8994ba;
+
+  font-size:
+    13px;
+
+  line-height:
+    1.5;
+}
+
+
+/* =========================================================
+   BUSCA
+========================================================= */
+
+.friend-search-box {
+  display:
+    grid;
+
+  grid-template-columns:
+    1fr auto;
+
+  gap:
+    10px;
+
+  margin-top:
+    24px;
+}
+
+.friend-search-input {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  min-height:
+    52px;
+
+  padding:
+    0 14px;
+
+  border:
+    2px solid #4d5c88;
+
+  border-radius:
+    10px;
+
+  background:
+    #10142e;
+}
+
+.friend-search-input:focus-within {
+  border-color:
+    #64d7ff;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(75, 207, 255, .08);
+}
+
+.friend-search-input > span {
+  margin-right:
+    10px;
+
+  color:
+    #69d9ff;
+
+  font-size:
+    24px;
+}
+
+.friend-search-input input {
+  width:
+    100%;
+
+  border:
+    0;
+
+  outline:
+    0;
+
+  color:
+    white;
+
+  background:
+    transparent;
+
+  font-size:
+    14px;
+}
+
+.friend-search-input input::placeholder {
+  color:
+    #5f698f;
+}
+
+.search-friend-button {
+  min-width:
+    130px;
+
+  padding:
+    0 20px;
+
+  border:
+    2px solid #67daff;
+
+  border-radius:
+    10px;
+
+  color:
+    white;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    1px;
+
+  background:
+    linear-gradient(
+      #349ac5,
+      #226483
+    );
+
+  box-shadow:
+    inset 0 2px 0
+    rgba(255,255,255,.18),
+    0 4px 0 #12394e;
+}
+
+.search-friend-button:hover {
+  filter:
+    brightness(1.1);
+
+  transform:
+    translateY(-1px);
+}
+
+.search-friend-button:disabled {
+  opacity:
+    .6;
+
+  cursor:
+    wait;
+}
+
+
+/* =========================================================
+   RESULTADOS / LISTA
+========================================================= */
+
+.friend-search-results {
+  margin-top:
+    25px;
+}
+
+.my-friends-section {
+  margin-top:
+    35px;
+
+  padding-top:
+    28px;
+
+  border-top:
+    1px solid
+    rgba(102, 117, 164, .28);
+}
+
+.friends-list-heading {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  margin-bottom:
+    14px;
+}
+
+.friends-list-heading span {
+  color:
+    #7888b9;
+
+  font-size:
+    9px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    2px;
+}
+
+.friends-list-heading strong {
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  min-width:
+    27px;
+
+  height:
+    27px;
+
+  padding:
+    0 7px;
+
+  border:
+    1px solid #53658f;
+
+  border-radius:
+    7px;
+
+  color:
+    #dce7ff;
+
+  background:
+    #171c3d;
+}
+
+
+/* =========================================================
+   CARD DE MEMBRO
+========================================================= */
+
+.friend-cards-list {
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    11px;
+}
+
+.friend-member-card {
+  display:
+    grid;
+
+  grid-template-columns:
+    auto 1fr auto;
+
+  align-items:
+    center;
+
+  gap:
+    16px;
+
+  padding:
+    15px;
+
+  border:
+    1px solid #4d5c86;
+
+  border-radius:
+    12px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #242d56,
+      #171c3e
+    );
+
+  box-shadow:
+    inset 0 1px 0
+    rgba(255,255,255,.06);
+}
+
+.friend-member-card:hover {
+  border-color:
+    #6276a7;
+}
+
+.confirmed-friend-card {
+  border-color:
+    #397c77;
+}
+
+
+/* AVATAR */
+
+.friend-avatar {
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  width:
+    62px;
+
+  height:
+    62px;
+
+  overflow:
+    hidden;
+
+  border:
+    2px solid #62d8ff;
+
+  border-radius:
+    14px;
+
+  color:
+    white;
+
+  font-size:
+    24px;
+
+  font-weight:
+    900;
+
+  background:
+    linear-gradient(
+      #38567c,
+      #222b50
+    );
+
+  box-shadow:
+    0 0 18px
+    rgba(73, 203, 255, .12);
+}
+
+.friend-avatar img {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  object-fit:
+    cover;
+}
+
+
+/* INFORMAÇÕES */
+
+.friend-member-info > span {
+  color:
+    #7183b3;
+
+  font-size:
+    8px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    1.6px;
+}
+
+.friend-member-info h3 {
+  margin:
+    4px 0 2px;
+
+  color:
+    white;
+
+  font-size:
+    17px;
+}
+
+.friend-member-info strong {
+  color:
+    #70dcff;
+
+  font-size:
+    11px;
+}
+
+
+/* =========================================================
+   BOTÕES DE AMIZADE
+========================================================= */
+
+.friend-member-action {
+  display:
+    flex;
+
+  justify-content:
+    flex-end;
+}
+
+.send-friend-request-button {
+  padding:
+    10px 14px;
+
+  border:
+    1px solid #63df91;
+
+  border-radius:
+    8px;
+
+  color:
+    white;
+
+  font-size:
+    9px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    .8px;
+
+  background:
+    linear-gradient(
+      #3bc96b,
+      #218943
+    );
+
+  box-shadow:
+    0 3px 0 #115727;
+}
+
+.send-friend-request-button:hover {
+  filter:
+    brightness(1.1);
+}
+
+.send-friend-request-button:disabled {
+  opacity:
+    .6;
+
+  cursor:
+    wait;
+}
+
+.friend-relation-status {
+  padding:
+    9px 12px;
+
+  border-radius:
+    8px;
+
+  font-size:
+    9px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    .7px;
+}
+
+.friend-status-confirmed {
+  border:
+    1px solid #3aae72;
+
+  color:
+    #74eca2;
+
+  background:
+    rgba(42, 158, 94, .13);
+}
+
+.friend-status-pending {
+  border:
+    1px solid #9d7c3c;
+
+  color:
+    #ffd87b;
+
+  background:
+    rgba(157, 112, 37, .13);
+}
+
+.friend-request-received-button {
+  padding:
+    10px 13px;
+
+  border:
+    1px solid #bf72f1;
+
+  border-radius:
+    8px;
+
+  color:
+    #e3b5ff;
+
+  font-size:
+    9px;
+
+  font-weight:
+    900;
+
+  background:
+    rgba(119, 54, 159, .22);
+}
+
+
+/* =========================================================
+   VAZIO
+========================================================= */
+
+.friends-empty-state {
+  padding:
+    37px 20px;
+
+  border:
+    1px dashed #46537e;
+
+  border-radius:
+    12px;
+
+  text-align:
+    center;
+
+  background:
+    rgba(14, 18, 45, .35);
+}
+
+.friends-empty-state > span {
+  color:
+    #63d6ff;
+
+  font-size:
+    35px;
+}
+
+.friends-empty-state h3 {
+  margin:
+    9px 0 4px;
+
+  color:
+    #e7eaff;
+}
+
+.friends-empty-state p {
+  max-width:
+    420px;
+
+  margin:
+    auto;
+
+  color:
+    #7883aa;
+
+  font-size:
+    12px;
+
+  line-height:
+    1.5;
+}
+
+.friends-loading {
+  padding:
+    35px;
+
+  color:
+    #818bad;
+
+  text-align:
+    center;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 650px) {
+
+  .friend-search-box {
+    grid-template-columns:
+      1fr;
+  }
+
+  .search-friend-button {
+    min-height:
+      47px;
+  }
+
+  .friend-member-card {
+    grid-template-columns:
+      auto 1fr;
+  }
+
+  .friend-member-action {
+    grid-column:
+      1 / -1;
+
+    justify-content:
+      stretch;
+  }
+
+  .send-friend-request-button,
+  .friend-request-received-button,
+  .friend-relation-status {
+    width:
+      100%;
+
+    text-align:
+      center;
+  }
+
+}
