@@ -15,24 +15,24 @@ function Home() {
   const [profile, setProfile] =
     useState<Profile | null>(null)
 
-  const [goldBalance, setGoldBalance] =
+  const [gold, setGold] =
     useState(0)
 
-  const [platinumBalance, setPlatinumBalance] =
+  const [platinum, setPlatinum] =
     useState(0)
 
   const [loading, setLoading] =
     useState(true)
 
   /* =========================================================
-     CARREGAMENTO
+     CARREGAR HOME
   ========================================================= */
 
   useEffect(() => {
-    loadHome()
+    carregarHome()
   }, [])
 
-  async function loadHome() {
+  async function carregarHome() {
     setLoading(true)
 
     const {
@@ -44,9 +44,9 @@ function Home() {
       return
     }
 
-    /*
-      PERFIL
-    */
+    /* =======================================================
+       PERFIL
+    ======================================================= */
 
     const {
       data: profileData,
@@ -59,10 +59,7 @@ function Home() {
         nickname,
         avatar_url
       `)
-      .eq(
-        'id',
-        user.id
-      )
+      .eq('id', user.id)
       .single()
 
     if (profileError) {
@@ -70,15 +67,17 @@ function Home() {
         'Erro ao carregar perfil:',
         profileError
       )
-    } else {
+    }
+
+    if (profileData) {
       setProfile(
         profileData as Profile
       )
     }
 
-    /*
-      GOLD GLOBAL DA GUILDA
-    */
+    /* =======================================================
+       GOLD GLOBAL
+    ======================================================= */
 
     const {
       data: goldData,
@@ -92,74 +91,55 @@ function Home() {
         'Erro ao carregar Gold:',
         goldError
       )
-    } else {
-      const totalGold =
-        (goldData ?? []).reduce(
-          (
-            total,
-            transaction
-          ) =>
-            total +
-            Number(
-              transaction.amount
-            ),
-          0
-        )
-
-      setGoldBalance(
-        totalGold
-      )
     }
 
-    /*
-      PLATINUM DO USUÁRIO
-    */
+    const totalGold =
+      goldData?.reduce(
+        (total, item) =>
+          total +
+          Number(item.amount),
+        0
+      ) ?? 0
+
+    setGold(totalGold)
+
+    /* =======================================================
+       PLATINUM DO USUÁRIO
+    ======================================================= */
 
     const {
       data: platinumData,
       error: platinumError,
     } = await supabase
-      .from(
-        'platinum_transactions'
-      )
+      .from('platinum_transactions')
       .select('amount')
-      .eq(
-        'user_id',
-        user.id
-      )
+      .eq('user_id', user.id)
 
     if (platinumError) {
       console.error(
         'Erro ao carregar Platinum:',
         platinumError
       )
-    } else {
-      const totalPlatinum =
-        (platinumData ?? []).reduce(
-          (
-            total,
-            transaction
-          ) =>
-            total +
-            Number(
-              transaction.amount
-            ),
-          0
-        )
-
-      setPlatinumBalance(
-        totalPlatinum
-      )
     }
+
+    const totalPlatinum =
+      platinumData?.reduce(
+        (total, item) =>
+          total +
+          Number(item.amount),
+        0
+      ) ?? 0
+
+    setPlatinum(totalPlatinum)
 
     setLoading(false)
   }
 
   /* =========================================================
-     SAIR
+     LOGOUT
   ========================================================= */
 
-  async function handleLogout() {
+  async function logout() {
     const { error } =
       await supabase.auth.signOut()
 
@@ -179,21 +159,20 @@ function Home() {
      FORMATAÇÃO
   ========================================================= */
 
-  function formatValue(
-    value: number
+  function formatarValor(
+    valor: number
   ) {
-    return Number(value)
-      .toLocaleString(
-        'pt-BR',
-        {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }
-      )
+    return valor.toLocaleString(
+      'pt-BR',
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }
+    )
   }
 
   /* =========================================================
-     CARREGANDO
+     LOADING
   ========================================================= */
 
   if (loading) {
@@ -204,9 +183,9 @@ function Home() {
           ✦
         </div>
 
-        <span>
+        <p>
           Entrando na Guilda...
-        </span>
+        </p>
 
       </div>
     )
@@ -219,16 +198,16 @@ function Home() {
   return (
     <main className="guild-page">
 
-      {/* LUZES DE FUNDO */}
+      {/* LUZES DO FUNDO */}
 
       <div className="ambient-glow ambient-glow-one" />
       <div className="ambient-glow ambient-glow-two" />
 
       <div className="guild-container">
 
-        {/* =====================================================
+        {/* ===================================================
             CABEÇALHO
-        ===================================================== */}
+        =================================================== */}
 
         <header className="guild-header">
 
@@ -249,25 +228,23 @@ function Home() {
           </div>
 
           <button
-            className="rpg-small-button"
-            onClick={
-              handleLogout
-            }
+            className="rpg-small-button logout-rpg"
+            onClick={logout}
           >
             SAIR
           </button>
 
         </header>
 
-        {/* =====================================================
+        {/* ===================================================
             PERSONAGEM
-        ===================================================== */}
+        =================================================== */}
 
         <section className="character-panel">
 
-          <div className="character-avatar-area">
+          <div className="character-avatar-frame">
 
-            <div className="character-avatar-ring">
+            <div className="avatar-ring">
 
               {profile?.avatar_url ? (
 
@@ -275,23 +252,25 @@ function Home() {
                   src={
                     profile.avatar_url
                   }
-                  alt={
-                    profile.name
-                  }
+                  alt="Avatar"
                   className="character-avatar"
                 />
 
               ) : (
 
-                <div className="character-avatar-fallback">
-                  👤
+                <div className="character-avatar avatar-fallback">
+
+                  {profile?.name
+                    ?.charAt(0)
+                    .toUpperCase() ?? '?'}
+
                 </div>
 
               )}
 
             </div>
 
-            <span className="online-indicator" />
+            <div className="online-indicator" />
 
           </div>
 
@@ -306,21 +285,19 @@ function Home() {
                 'Aventureiro'}
             </h2>
 
+            {/* NICKNAME */}
+
             {profile?.nickname && (
-              <strong
-                style={{
-                  color: '#73ddff',
-                  fontSize: '13px',
-                  marginBottom: '4px',
-                }}
-              >
+
+              <span className="home-nickname">
                 @{profile.nickname}
-              </strong>
+              </span>
+
             )}
 
             <div className="rank-line">
 
-              <span className="rank-icon">
+              <span className="rank-badge">
                 ✦
               </span>
 
@@ -330,23 +307,23 @@ function Home() {
 
             </div>
 
-            <div className="character-status-bar">
+            <div className="xp-area">
 
-              <div className="status-bar-background">
+              <div className="xp-top">
 
-                <div className="status-bar-fill" />
+                <span>
+                  STATUS
+                </span>
+
+                <span>
+                  ONLINE
+                </span>
 
               </div>
 
-              <div className="status-bar-info">
+              <div className="xp-bar">
 
-                <span>
-                  GUILDY
-                </span>
-
-                <span>
-                  ATIVO
-                </span>
+                <div className="xp-fill" />
 
               </div>
 
@@ -356,84 +333,84 @@ function Home() {
 
         </section>
 
-        {/* =====================================================
-            RECURSOS
-        ===================================================== */}
+        {/* ===================================================
+            MOEDAS
+        =================================================== */}
 
         <section className="resource-section">
 
           {/* GOLD */}
 
-          <article className="resource-card gold-card">
-
-            <div className="resource-card-glow" />
+          <div className="resource-card gold-card">
 
             <div className="resource-icon gold-icon">
               ◉
             </div>
 
-            <div className="resource-info">
+            <div className="resource-content">
 
-              <span>
+              <span className="resource-label">
                 GOLD DA GUILDA
               </span>
 
               <strong>
-                {formatValue(
-                  goldBalance
+                {formatarValor(
+                  gold
                 )}
               </strong>
 
-              <small>
+              <span className="resource-description">
                 Tesouro coletivo
-              </small>
+              </span>
 
             </div>
 
-          </article>
+            <div className="resource-glow gold-glow" />
+
+          </div>
 
           {/* PLATINUM */}
 
-          <article className="resource-card platinum-card">
-
-            <div className="resource-card-glow" />
+          <div className="resource-card platinum-card">
 
             <div className="resource-icon platinum-icon">
               ◆
             </div>
 
-            <div className="resource-info">
+            <div className="resource-content">
 
-              <span>
+              <span className="resource-label">
                 SEU PLATINUM
               </span>
 
               <strong>
-                {formatValue(
-                  platinumBalance
+                {formatarValor(
+                  platinum
                 )}
               </strong>
 
-              <small>
+              <span className="resource-description">
                 Recompensa pessoal
-              </small>
+              </span>
 
             </div>
 
-          </article>
+            <div className="resource-glow platinum-glow" />
+
+          </div>
 
         </section>
 
-        {/* =====================================================
+        {/* ===================================================
             MENU
-        ===================================================== */}
+        =================================================== */}
 
         <section className="guild-menu">
 
           {/* MISSÕES */}
 
           <button
-            className="rpg-menu-card"
+            className="rpg-menu-card missions-card"
             onClick={() =>
               navigate(
                 '/missions'
@@ -441,36 +418,44 @@ function Home() {
             }
           >
 
-            <div className="rpg-menu-frame red-frame">
+            <div className="menu-card-shine" />
 
-              <div className="rpg-menu-icon">
+            <div className="rpg-icon-frame red-frame">
+
+              <span className="rpg-menu-icon">
                 ⚔
-              </div>
-
-              <div className="rpg-menu-content">
-
-                <span>
-                  QUADRO DA GUILDA
-                </span>
-
-                <strong>
-                  MISSÕES
-                </strong>
-
-              </div>
-
-              <div className="rpg-menu-arrow">
-                ›
-              </div>
+              </span>
 
             </div>
+
+            <div className="menu-card-content">
+
+              <span className="menu-category">
+                QUADRO DA GUILDA
+              </span>
+
+              <h2>
+                MISSÕES
+              </h2>
+
+              <p>
+                Encontre tarefas,
+                aceite desafios e
+                conquiste recompensas.
+              </p>
+
+            </div>
+
+            <span className="menu-arrow">
+              ›
+            </span>
 
           </button>
 
           {/* IDEIAS */}
 
           <button
-            className="rpg-menu-card"
+            className="rpg-menu-card ideas-card"
             onClick={() =>
               navigate(
                 '/ideas'
@@ -478,36 +463,44 @@ function Home() {
             }
           >
 
-            <div className="rpg-menu-frame purple-frame">
+            <div className="menu-card-shine" />
 
-              <div className="rpg-menu-icon">
+            <div className="rpg-icon-frame purple-frame">
+
+              <span className="rpg-menu-icon">
                 ☁
-              </div>
-
-              <div className="rpg-menu-content">
-
-                <span>
-                  ARQUIVO MÁGICO
-                </span>
-
-                <strong>
-                  IDEIAS
-                </strong>
-
-              </div>
-
-              <div className="rpg-menu-arrow">
-                ›
-              </div>
+              </span>
 
             </div>
+
+            <div className="menu-card-content">
+
+              <span className="menu-category">
+                ARQUIVO MÁGICO
+              </span>
+
+              <h2>
+                IDEIAS
+              </h2>
+
+              <p>
+                Conecte pensamentos
+                e construa seu
+                universo de ideias.
+              </p>
+
+            </div>
+
+            <span className="menu-arrow">
+              ›
+            </span>
 
           </button>
 
           {/* CALCULADORA */}
 
           <button
-            className="rpg-menu-card"
+            className="rpg-menu-card calculator-card"
             onClick={() =>
               navigate(
                 '/calculator'
@@ -515,36 +508,46 @@ function Home() {
             }
           >
 
-            <div className="rpg-menu-frame blue-frame">
+            <div className="menu-card-shine" />
 
-              <div className="rpg-menu-icon">
+            <div className="rpg-icon-frame blue-frame">
+
+              <span className="rpg-menu-icon">
                 ✧
-              </div>
-
-              <div className="rpg-menu-content">
-
-                <span>
-                  ARTEFATO NUMÉRICO
-                </span>
-
-                <strong>
-                  CALCULADORA
-                </strong>
-
-              </div>
-
-              <div className="rpg-menu-arrow">
-                ›
-              </div>
+              </span>
 
             </div>
 
+            <div className="menu-card-content">
+
+              <span className="menu-category">
+                ARTEFATO NUMÉRICO
+              </span>
+
+              <h2>
+                CALCULADORA
+              </h2>
+
+              <p>
+                Use o modo Humano
+                ou convoque a
+                Calculadora Mágica.
+              </p>
+
+            </div>
+
+            <span className="menu-arrow">
+              ›
+            </span>
+
           </button>
 
-          {/* PERFIL */}
+          {/* =================================================
+              PERFIL
+          ================================================= */}
 
           <button
-            className="rpg-menu-card profile-menu-card"
+            className="rpg-menu-card profile-card"
             onClick={() =>
               navigate(
                 '/profile'
@@ -552,37 +555,45 @@ function Home() {
             }
           >
 
-            <div className="rpg-menu-frame profile-frame">
+            <div className="menu-card-shine" />
 
-              <div className="rpg-menu-icon">
+            <div className="rpg-icon-frame profile-icon-frame">
+
+              <span className="rpg-menu-icon">
                 👤
-              </div>
-
-              <div className="rpg-menu-content">
-
-                <span>
-                  CONTA DA GUILDA
-                </span>
-
-                <strong>
-                  PERFIL
-                </strong>
-
-              </div>
-
-              <div className="rpg-menu-arrow">
-                ›
-              </div>
+              </span>
 
             </div>
+
+            <div className="menu-card-content">
+
+              <span className="menu-category">
+                CONTA DA GUILDA
+              </span>
+
+              <h2>
+                PERFIL
+              </h2>
+
+              <p>
+                Gerencie sua identidade,
+                amigos e solicitações
+                da Guilda.
+              </p>
+
+            </div>
+
+            <span className="menu-arrow">
+              ›
+            </span>
 
           </button>
 
         </section>
 
-        {/* =====================================================
+        {/* ===================================================
             RODAPÉ
-        ===================================================== */}
+        =================================================== */}
 
         <footer className="guild-footer">
 
@@ -590,7 +601,9 @@ function Home() {
             ✦
           </span>
 
-          GUILDY — SISTEMA DA GUILDA
+          <p>
+            GUILDY — SISTEMA DA GUILDA
+          </p>
 
           <span>
             ✦
